@@ -14,6 +14,7 @@ def authorized(request, authorization_id):
     auth = FacebookAuthorization.objects.get(id = authorization_id)
     if request.GET.get('error'):
         # @todo Handle user not wanting to auth.
+        print "error"
         return redirect(auth.get_absolute_url())
 
     # @todo We are probably better of using some kind of
@@ -22,6 +23,7 @@ def authorized(request, authorization_id):
     try:
         access_token = auth.get_access_token(code)[0]
     except urllib2.HTTPError:
+        print "Cannot get access token"
         return redirect(auth.get_facebook_authorize_url())
 
     request_data = GraphAPI(access_token).get_object('me')
@@ -39,8 +41,8 @@ def authorized(request, authorization_id):
     facebook_user.email = request_data.get('email')
     facebook_user.save()
 
-    user = authenticate(facebook_user=facebook_user)
-    if user is None:
+    authenticated_user = authenticate(facebook_user=facebook_user)
+    if authenticated_user is None:
         # @todo import the profile and check if it has a foreignkey to
         # FacebookUser
         username = "".join(random.choice(BASE62_ALPHABET) for i in xrange(30))
@@ -54,13 +56,13 @@ def authorized(request, authorization_id):
             profile = user.get_profile()
             profile.facebook = facebook_user
             profile.save()
-            user = authenticate(facebook_user=facebook_user)
+            authenticated_user = authenticate(facebook_user=facebook_user)
         except SiteProfileNotAvailable:
             user.delete()
 
-    if not user is None:
-        if user.is_active:
-            login(request, user)
+    if not authenticated_user is None:
+        if authenticated_user.is_active:
+            login(request, authenticated_user)
             #@todo handle user not active.
         #@todo what should happen if the user doesn't get logged in?
 
