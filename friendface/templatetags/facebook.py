@@ -13,8 +13,8 @@ class FacebookUrlNode(template.Node):
         local_path = self.url_node.render(context)
         request = context.get('request')
         if not request: return ''
-        if not hasattr(request, 'facebook_application'): return ''
-        application = context['request'].facebook_application
+        if not hasattr(request, 'facebook'): return ''
+        application = context['request'].facebook
         canvas_url = urlparse(application.canvas_url)
         clipped_path = local_path.lstrip(canvas_url.path)
         return urljoin(application.canvas_url, clipped_path)
