@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.contrib.auth.models import User
-from better_facebook.models import FacebookUser
+from friendface.models import FacebookUser
 
 # Get the name of the AUTH profile so that we can check if the user
 # has a relationship with facebook. Is there a neater way of doing this?

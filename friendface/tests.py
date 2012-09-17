@@ -1,5 +1,5 @@
 from django.test.testcases import TestCase
-from better_facebook.models import FacebookApplication
+from friendface.models import FacebookApplication
 
 class FacebookApplicationTestCase(TestCase):
     fixtures = ["application.json"]

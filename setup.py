@@ -20,9 +20,13 @@ setup(
     long_description=__doc__,
     packages=find_packages(exclude=("tests",)),
     zip_safe=False,
-    install_requires=['facebook-sdk'],
+    install_requires=[
+        # This seem to install from a different source, why?
+        #'facebook-sdk==0.3.0',
+        'requests==0.14.0'
+    ],
     dependency_links = [
-        'git+git://github.com/Celc/facebook-sdk.git#egg=facebook-sdk',
+        #'git+git://github.com/Celc/facebook-sdk.git#egg=facebook-sdk',
     ],
     test_suite='runtests.runtests',
     include_package_data=True,

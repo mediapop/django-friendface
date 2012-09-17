@@ -3,12 +3,11 @@ import random
 import urllib2
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User, SiteProfileNotAvailable
-from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.utils.baseconv import BASE62_ALPHABET
 from facebook import GraphAPI
-from better_facebook.models import (FacebookApplication, FacebookAuthorization,
+from friendface.models import (FacebookApplication, FacebookAuthorization,
                                     FacebookUser, FacebookInvitation)
 
 def authorized(request, authorization_id):

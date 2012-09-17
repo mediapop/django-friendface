@@ -74,12 +74,12 @@ class FacebookAuthorization(models.Model):
         return parsed_response['access_token']
 
     def get_absolute_url(self):
-        return reverse('better_facebook.views.authorized', kwargs={
+        return reverse('friendface.views.authorized', kwargs={
             'authorization_id': self.id
         })
 
     def get_authorized_url(self):
-        return reverse('better_facebook.views.authorized',
+        return reverse('friendface.views.authorized',
                 kwargs={'authorization_id': self.id})
 
     def get_facebook_authorize_url(self):
@@ -220,7 +220,7 @@ class FacebookApplication(models.Model, FacebookRequestMixin):
         return self.url
 
     def get_authorize_url(self, next = None):
-        authorize_url = reverse('better_facebook.views.authorize',
+        authorize_url = reverse('friendface.views.authorize',
                                 kwargs={'application_id': self.id})
         if not next is None:
             authorize_url += "?" + urllib.urlencode({"next": next})

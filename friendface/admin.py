@@ -1,5 +1,5 @@
 from django.contrib import admin
-from better_facebook.models import (FacebookApplication,
+from friendface.models import (FacebookApplication,
                                     FacebookPage,
                                     FacebookUser,
                                     FacebookTab, FacebookInvitation)
