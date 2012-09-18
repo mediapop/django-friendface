@@ -4,6 +4,7 @@ from django.templatetags.future import url
 
 register = template.Library()
 
+
 class FacebookUrlNode(template.Node):
     def __init__(self, url_node):
         self.url_node = url_node
@@ -17,7 +18,7 @@ class FacebookUrlNode(template.Node):
         application = context['request'].facebook
         canvas_url = urlparse(application.canvas_url)
         clipped_path = local_path.lstrip(canvas_url.path)
-        return urljoin(application.canvas_url, clipped_path)
+        return urljoin(application.url, clipped_path)
 
 
 @register.tag
