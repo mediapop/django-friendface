@@ -42,7 +42,7 @@ class FacebookUser(models.Model, FacebookRequestMixin):
         unique_together = ('uid', 'application')
 
     def photo_url(self):
-        return "https://graph.facebook.com/{}/picture".format(self.uid)
+        return "https://graph.facebook.com/{0}/picture".format(self.uid)
 
     def full_name(self):
         if not self.first_name and not self.last_name:
@@ -173,7 +173,7 @@ class FacebookApplication(models.Model, FacebookRequestMixin):
     @property
     def url(self):
         if not self.canvas_url: return None
-        return "https://apps.facebook.com/{}/".format(self.namespace)
+        return "https://apps.facebook.com/{0}/".format(self.namespace)
 
     def get_access_token(self):
         response = requests.get("https://graph.facebook.com/oauth/access_token",
