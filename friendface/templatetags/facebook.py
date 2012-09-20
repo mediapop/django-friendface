@@ -15,10 +15,8 @@ class FacebookUrlNode(template.Node):
         request = context.get('request')
         if not request: return ''
         if not hasattr(request, 'facebook'): return ''
-        application = context['request'].facebook
-        canvas_url = urlparse(application.canvas_url)
-        clipped_path = local_path.lstrip(canvas_url.path)
-        return urljoin(application.url, clipped_path)
+        application = request.facebook
+        return application.build_canvas_url(local_path)
 
 
 @register.tag

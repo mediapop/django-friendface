@@ -91,6 +91,7 @@ class FacebookAuthorization(models.Model):
         facebook_url = "https://graph.facebook.com/oauth/authorize"
         return "{0}?{1}".format(facebook_url, query)
 
+
 class FacebookApplication(models.Model, FacebookRequestMixin):
     id = models.BigIntegerField(primary_key=True)
     name = models.CharField(max_length=32,
@@ -172,8 +173,16 @@ class FacebookApplication(models.Model, FacebookRequestMixin):
 
     @property
     def url(self):
+        return self.build_canvas_url()
+
+    def build_canvas_url(self, location=None):
         if not self.canvas_url: return None
-        return "https://apps.facebook.com/{0}/".format(self.namespace)
+        if location is None:
+            return "https://apps.facebook.com/{0}/".format(self.namespace)
+
+        canvas_url = urlparse.urlparse(self.canvas_url)
+        clipped_path = location.lstrip(canvas_url.path)
+        return urlparse.urljoin(self.url, clipped_path)
 
     def get_access_token(self):
         response = requests.get("https://graph.facebook.com/oauth/access_token",
