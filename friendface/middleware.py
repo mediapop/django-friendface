@@ -13,7 +13,7 @@ class FacebookApplicationMiddleware(object):
         field = 'secure_canvas_url' if request.is_secure() else 'canvas_url'
 
         extra_args = {
-            'select': {'{0}_length'.format(field): 'Length({0})'.format(field)},
+            'select': {'{0}_length'.format(field): 'LENGTH({0})'.format(field)},
             'params': [current_url, '%']
         }
         if connection.settings_dict['ENGINE'] == 'django.db.backends.mysql':
