@@ -1,3 +1,4 @@
+from django.db import connection
 from friendface.models import FacebookApplication
 from django.db.utils import DatabaseError
 
@@ -11,26 +12,20 @@ class FacebookApplicationMiddleware(object):
         current_url = request.build_absolute_uri()
         field = 'secure_canvas_url' if request.is_secure() else 'canvas_url'
 
-        base_extra_args = {
+        extra_args = {
             'select': {'{0}_length'.format(field): 'Length({0})'.format(field)},
             'params': [current_url, '%']
         }
-
-        apps = FacebookApplication.objects.order_by('-{0}_length'.format(field))
-
-        try:
-            extra_args = base_extra_args.copy()
+        if connection.settings_dict['ENGINE'] == 'django.db.backends.mysql':
+            # MySQL doesn't support ANSI SQL concat via || without setting
+            # PIPES_AS_CONCAT. Can we detect the PIPES_AS_CONCAT setting?
+            # Also: http://dev.mysql.com/doc/refman/5.6/en/ansi-mode.html
             extra_args['where'] = ["%s LIKE CONCAT({0}, %s)".format(field)]
-            apps = list(apps.extra(**extra_args))
-        except DatabaseError as e:
-            # SQLite3 cannot do CONCAT so we'll manually filter the list.
-            # Is there a way to dect the datbase backend so we don't have to
-            # try to connect and then recover?
-            if e.message != 'no such function: CONCAT':
-                raise
+        else:
+            extra_args['where'] = ["%s LIKE {0} || %s".format(field)]
 
-            apps = filter(lambda a: getattr(a, field).startswith(field),
-                          apps.extra(**base_extra_args))
+        apps = FacebookApplication.objects.extra(**extra_args)\
+        .order_by('-{0}_length'.format(field))
 
         try:
             setattr(request, 'facebook', apps[0])
