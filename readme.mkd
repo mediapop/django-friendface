@@ -27,14 +27,22 @@ that there needs to be a Profile on the User object.
 
     class Profile(models.Model):
         user = models.OneToOneField('contrib.auth.User')
-        facebook = models.OneToOneField('friendface.FacebookUser')
+        facebook = models.OneToOneField('friendface.FacebookUser',
+                                        null=True,
+                                        blank=True)
 
 
-### Facebook Middleware
+### Facebook Middlewares
 
-    MIDDLEWARE_CLASSES += ('friendface.middelwares.facebook',)
+    MIDDLEWARE_CLASSES += (
+        'friendface.middleware.FacebookApplicationMiddleware',
+        'friendface.middleware.FacebookDecodingMiddleware',
+        'friendface.middleware.FacebookSignedRequestAuthenticationMiddleware',
+    )
 
-The `facebook` middleware matches your request path with the Facebook
+#### FacebookApplicationMiddleware
+
+Matches your request path with the Facebook
 applications paths and loads that application. If there's more than one
 application with the same path it will pick the most exact match (i.e. the
 shorter URL.) and set the `facebook_application` on the `request`.
@@ -43,3 +51,11 @@ shorter URL.) and set the `facebook_application` on the `request`.
         app = request.facebook_application
         response = app.request('http://www.mediapop.co')
         return HttpResponse(response['shares'])
+
+#### FacebookDecodingMiddleware
+
+Decodes the `signed_request` and makes it accessible via `request.FACEBOOK`
+
+#### FacebookSignedRequestAuthenticationMiddleware
+
+Reads the `user_id` from a decoded request and signs that user in.
