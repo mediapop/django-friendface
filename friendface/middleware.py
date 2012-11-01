@@ -3,6 +3,11 @@ from django.db import connection
 import re
 from friendface.models import FacebookApplication
 
+class P3PMiddleware(object):
+    def process_response(self, request, response):
+        response['P3P'] = "Nonsense http://support.google.com/accounts/bin/answer.py?hl=en&answer=151657"
+        return response
+
 class FacebookApplicationMiddleware(object):
     _match_non_ansi_concat = re.compile('CONCAT\((.+),(.+)\)')
 
