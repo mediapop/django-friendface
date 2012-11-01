@@ -26,7 +26,7 @@ Django will link to FacebookUser to the Users profile as `facebook`. This means
 that there needs to be a Profile on the User object.
 
     class Profile(models.Model):
-        user = models.OneToneField('contrib.auth.User')
+        user = models.OneToOneField('contrib.auth.User')
         facebook = models.OneToOneField('friendface.FacebookUser')
 
 
