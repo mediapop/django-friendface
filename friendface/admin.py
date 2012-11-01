@@ -37,7 +37,6 @@ class FacebookApplicationAdmin(admin.ModelAdmin):
                        'weekly_active_users',
                        'monthly_active_users',
                        'auth_dialog_data_help_url',
-                       'auth_dialog_description',
                        'auth_dialog_headline',
                        'auth_dialog_perms_explanation',
                        'auth_referral_default_activity_privacy',

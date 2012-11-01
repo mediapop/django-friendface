@@ -129,7 +129,6 @@ class FacebookApplication(models.Model, FacebookRequestMixin):
     weekly_active_users = models.BigIntegerField(blank=True, null=True)
     monthly_active_users = models.BigIntegerField(blank=True, null=True)
     auth_dialog_data_help_url = models.URLField(blank=True, null=True)
-    auth_dialog_description = models.TextField(blank=True, null=True)
     auth_dialog_headline = models.CharField(max_length=32,
                                             blank=True,
                                             null=True)
@@ -158,6 +157,7 @@ class FacebookApplication(models.Model, FacebookRequestMixin):
     page_tab_default_name = models.CharField(max_length=32,
                                              blank=True,
                                              null=True)
+
     page_tab_url = models.URLField(blank=True, null=True)
     privacy_policy_url = models.URLField(blank=True, null=True)
     secure_canvas_url = models.URLField(blank=True, null=True)
@@ -202,7 +202,10 @@ class FacebookApplication(models.Model, FacebookRequestMixin):
             for field in FacebookApplication._meta.fields
             if field.name not in exclude_fields)
 
-        app_data = graph.request(unicode(self.id), {'fields': fields})
+        # Facebook gives us a limited amount of fields by default, we need
+        # to explicitly request the additoinal ones.
+        app_data = graph.request(unicode(self.id),{'fields': fields})
+
         for key, value in app_data.items():
             setattr(self, key, value)
         super(FacebookApplication, self).save(*args, **kwargs)
