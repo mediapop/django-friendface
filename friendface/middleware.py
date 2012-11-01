@@ -1,3 +1,4 @@
+from django.contrib.auth import authenticate, login
 from django.db import connection
 import re
 from friendface.models import FacebookApplication
@@ -99,3 +100,14 @@ class FacebookDecodingMiddleware(object):
             setattr(request, 'FACEBOOK', decoded)
         else:
             setattr(request, 'FACEBOOK', {})
+
+
+class FacebookSignedRequestAuthenticationMiddleware(object):
+    """If a signed_request has been decoded this will log that user in."""
+    def process_request(self, request):
+        if hasattr(request, 'FACEBOOK') and 'user_id' in request.FACEBOOK:
+            user_id = request.FACEBOOK['user_id']
+            facebook_user = request.facebook.facebookuser_set.get(uid=user_id)
+            authenticated_user = authenticate(facebook_user=facebook_user)
+            if authenticated_user and authenticated_user.is_active:
+                login(request, authenticated_user)
