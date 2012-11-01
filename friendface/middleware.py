@@ -1,34 +1,89 @@
 from django.db import connection
+import re
 from friendface.models import FacebookApplication
-from django.db.utils import DatabaseError
 
 class FacebookApplicationMiddleware(object):
-    def process_request(self, request):
-        # This is admittedly a rather strange looking.. lookup.
-        # What we need to do is find out if the applications canvas_url is the
-        # start of the URL we are currently on. Once that has been established
-        # we also need to find out which canvas_url is longer to find out
-        # which is the closer match.
+    _match_non_ansi_concat = re.compile('CONCAT\((.+),(.+)\)')
+
+    def _find_applications(self, request):
+        # This rather awkward query finds application by finding all matching
+        # applications and then selecting the ones with the longest match
+        # Attempting to turn this into a single query with the ORM is left as a
+        # futile exercise to the reader
         current_url = request.build_absolute_uri()
-        field = 'secure_canvas_url' if request.is_secure() else 'canvas_url'
+        canvas = 'secure_canvas_url' if request.is_secure() else 'canvas_url'
+        page_tab = 'secure_page_tab_url' if request.is_secure() else 'page_tab_url'
 
-        extra_args = {
-            'select': {'{0}_length'.format(field): 'LENGTH({0})'.format(field)},
-            'params': [current_url, '%']
-        }
-        if connection.settings_dict['ENGINE'] == 'django.db.backends.mysql':
-            # MySQL doesn't support ANSI SQL concat via || without setting
-            # PIPES_AS_CONCAT. Can we detect the PIPES_AS_CONCAT setting?
-            # Also: http://dev.mysql.com/doc/refman/5.6/en/ansi-mode.html
-            extra_args['where'] = ["%s LIKE CONCAT({0}, %s)".format(field)]
+        # We don't need to query for  website_url or mobile_web_url if there's
+        # a signed_request present
+        if request.POST.get('signed_request'):
+            additional_lookups = """
+                UNION ALL
+                SELECT *, LENGTH(website_url) AS MatchLen
+                FROM friendface_facebookapplication
+                WHERE %(url)s LIKE CONCAT(website_url, %(percent)s)
+                UNION ALL
+                SELECT *, LENGTH(mobile_web_url) AS MatchLen
+                FROM friendface_facebookapplication
+                WHERE %(url)s LIKE CONCAT(website_url, %(percent)s)"""
+            additional_length_match = """
+                UNION ALL
+                SELECT LENGTH(website_url) AS MatchLen
+                FROM friendface_facebookapplication
+                WHERE %(url)s LIKE CONCAT(website_url, %(percent)s)
+                UNION ALL
+                SELECT LENGTH(mobile_web_url) AS MatchLen
+                FROM friendface_facebookapplication
+                WHERE %(url)s LIKE CONCAT(website_url, %(percent)s)"""
         else:
-            extra_args['where'] = ["%s LIKE {0} || %s".format(field)]
+            additional_lookups = additional_length_match = ''
 
-        apps = FacebookApplication.objects.extra(**extra_args)\
-        .order_by('-{0}_length'.format(field))
+        query = """
+            SELECT * FROM (
+              SELECT *, LENGTH({page_tab_field}) AS MatchLen
+              FROM friendface_facebookapplication
+              WHERE %(url)s LIKE CONCAT({page_tab_field}, %(percent)s)
+              UNION ALL
+              SELECT *, LENGTH({canvas_field}) AS MatchLen
+              FROM friendface_facebookapplication
+              WHERE %(url)s LIKE CONCAT({canvas_field}, %(percent)s)
+              {additional_lookups}
+            ) AS matches
+            WHERE MatchLen = (
+              -- Find the maximum length.
+              SELECT MAX(MatchLen) FROM (
+                SELECT LENGTH({page_tab_field}) AS MatchLen
+                FROM friendface_facebookapplication
+                WHERE %(url)s LIKE CONCAT({page_tab_field}, %(percent)s)
+                UNION ALL
+                SELECT LENGTH({canvas_field}) AS MatchLen
+                FROM friendface_facebookapplication
+                WHERE %(url)s LIKE CONCAT({canvas_field}, %(percent)s)
+                {additional_length_match}
+              ) as LengthMatch);
+        """.format(additional_lookups=additional_lookups,
+                   additional_length_match=additional_length_match,
+                   canvas_field=canvas,
+                   page_tab_field=page_tab)
+
+        # MySQL doesn't support ANSI SQL concat via || without setting
+        # PIPES_AS_CONCAT. Can we detect the PIPES_AS_CONCAT setting?
+        # See: http://dev.mysql.com/doc/refman/5.6/en/ansi-mode.html
+        if not connection.settings_dict['ENGINE'] == 'django.db.backends.mysql':
+            query = self._match_non_ansi_concat.sub("\\1 || \\2", query)
+
+        parameters = {'percent': '%', 'url': current_url }
+        return FacebookApplication.objects.raw(query, parameters)
+
+
+
+    def process_request(self, request):
+        # We discover the FacebookApplication relevant to our URL by url
+        # matching the applications settings.
+        applications = self._find_applications(request)
 
         try:
-            setattr(request, 'facebook', apps[0])
+            setattr(request, 'facebook', applications[0])
         except IndexError:
             pass
 
