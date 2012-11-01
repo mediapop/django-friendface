@@ -1,5 +1,5 @@
 # C Pythong
-.pyc
+*.pyc
 
 # PyCharm
 .idea
