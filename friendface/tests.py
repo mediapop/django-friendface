@@ -10,3 +10,11 @@ class FacebookApplicationTestCase(TestCase):
         response = self.client.get(path=app.get_authorize_url())
         self.assertEqual(response.status_code, 200)
         self.assertEqual(app.facebookauthorization_set.count(), 1)
+
+    def test_authorize_url_next(self):
+        app = FacebookApplication.objects.get()
+        self.assertEqual(app.facebookauthorization_set.count(), 0)
+        next = 'http://www.google.com'
+        response = self.client.get(path=app.get_authorize_url(next))
+        auth = app.facebookauthorization_set.get()
+        self.assertEqual(next, auth.next)
