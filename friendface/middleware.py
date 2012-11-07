@@ -81,9 +81,9 @@ class FacebookApplicationMiddleware(object):
         # The Python SQLite adapter doesn't allow %(named_param)s for raw
         # queries, so to work around that just use %s and replace the old
         # fashioned way.
-        parameters = ['%', current_url] * 4
+        parameters = [current_url, '%', ] * 4
         if additional_lookups and additional_length_match:
-            parameters = parameters + (['%', current_url] * 4)
+            parameters = parameters + ([current_url, '%'] * 4)
 
         return FacebookApplication.objects.raw(query, parameters)
 
