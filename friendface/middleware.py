@@ -27,20 +27,20 @@ class FacebookApplicationMiddleware(object):
                 UNION ALL
                 SELECT *, LENGTH(website_url) AS MatchLen
                 FROM friendface_facebookapplication
-                WHERE %(url)s LIKE CONCAT(website_url, %(percent)s)
+                WHERE %s LIKE CONCAT(website_url, %s)
                 UNION ALL
                 SELECT *, LENGTH(mobile_web_url) AS MatchLen
                 FROM friendface_facebookapplication
-                WHERE %(url)s LIKE CONCAT(website_url, %(percent)s)"""
+                WHERE %s LIKE CONCAT(website_url, %s)"""
             additional_length_match = """
                 UNION ALL
                 SELECT LENGTH(website_url) AS MatchLen
                 FROM friendface_facebookapplication
-                WHERE %(url)s LIKE CONCAT(website_url, %(percent)s)
+                WHERE %s LIKE CONCAT(website_url, %s)
                 UNION ALL
                 SELECT LENGTH(mobile_web_url) AS MatchLen
                 FROM friendface_facebookapplication
-                WHERE %(url)s LIKE CONCAT(website_url, %(percent)s)"""
+                WHERE %s LIKE CONCAT(website_url, %s)"""
         else:
             additional_lookups = additional_length_match = ''
 
@@ -48,11 +48,11 @@ class FacebookApplicationMiddleware(object):
             SELECT * FROM (
               SELECT *, LENGTH({page_tab_field}) AS MatchLen
               FROM friendface_facebookapplication
-              WHERE %(url)s LIKE CONCAT({page_tab_field}, %(percent)s)
+              WHERE %s LIKE CONCAT({page_tab_field}, %s)
               UNION ALL
               SELECT *, LENGTH({canvas_field}) AS MatchLen
               FROM friendface_facebookapplication
-              WHERE %(url)s LIKE CONCAT({canvas_field}, %(percent)s)
+              WHERE %s LIKE CONCAT({canvas_field}, %s)
               {additional_lookups}
             ) AS matches
             WHERE MatchLen = (
@@ -60,11 +60,11 @@ class FacebookApplicationMiddleware(object):
               SELECT MAX(MatchLen) FROM (
                 SELECT LENGTH({page_tab_field}) AS MatchLen
                 FROM friendface_facebookapplication
-                WHERE %(url)s LIKE CONCAT({page_tab_field}, %(percent)s)
+                WHERE %s LIKE CONCAT({page_tab_field}, %s)
                 UNION ALL
                 SELECT LENGTH({canvas_field}) AS MatchLen
                 FROM friendface_facebookapplication
-                WHERE %(url)s LIKE CONCAT({canvas_field}, %(percent)s)
+                WHERE %s LIKE CONCAT({canvas_field}, %s)
                 {additional_length_match}
               ) as LengthMatch);
         """.format(additional_lookups=additional_lookups,
@@ -78,7 +78,13 @@ class FacebookApplicationMiddleware(object):
         if not connection.settings_dict['ENGINE'] == 'django.db.backends.mysql':
             query = self._match_non_ansi_concat.sub("\\1 || \\2", query)
 
-        parameters = {'percent': '%', 'url': current_url }
+        # The Python SQLite adapter doesn't allow %(named_param)s for raw
+        # queries, so to work around that just use %s and replace the old
+        # fashioned way.
+        parameters = ['%', current_url] * 4
+        if additional_lookups and additional_length_match:
+            parameters = parameters + (['%', current_url] * 4)
+
         return FacebookApplication.objects.raw(query, parameters)
 
 
