@@ -6,7 +6,8 @@
         "fields":{
             "name": "foo",
             "secret": "bar",
-            "namespace": "mhe"
+            "namespace": "mhe",
+            "link": "http://www.facebook.com/apps/application.php?id=382752368461014"
         }
     }
 ]
