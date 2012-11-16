@@ -210,14 +210,6 @@ class FacebookApplication(models.Model, FacebookRequestMixin):
             setattr(self, key, value)
         super(FacebookApplication, self).save(*args, **kwargs)
 
-
-    def get_canvas_url(self, path):
-        """Takes the URL relative to Django and turns it into a URL
-        relative this facebook apps canvas page."""
-        canvas_path = urlparse.urlparse(self.canvas_url).path
-        assert(path.startswith(canvas_path))
-        return self.url + path[len(canvas_path):]
-
     def scrape(self, obj):
         # Tell facebook to crawl the URL so it both has the data already on first
         # share and we clear all of those debug ones.
