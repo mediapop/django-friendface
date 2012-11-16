@@ -176,12 +176,16 @@ class FacebookApplication(models.Model, FacebookRequestMixin):
         return self.build_canvas_url()
 
     def build_canvas_url(self, location=None):
+        """Takes the URL relative to Django and turns it into a URL
+        relative this facebook apps canvas page."""
         if not self.canvas_url: return None
         if location is None:
             return "https://apps.facebook.com/{0}/".format(self.namespace)
-
-        canvas_url = urlparse.urlparse(self.canvas_url)
-        clipped_path = location.lstrip(canvas_url.path)
+        canvas_path = urlparse.urlparse(self.canvas_url).path
+        assert(location.startswith(canvas_path),
+               "The application path %s doesn't is not the start of the "
+               "location path so no canvas url can be derived.")
+        clipped_path = location[len(canvas_path):]
         return urlparse.urljoin(self.url, clipped_path)
 
     def get_access_token(self):
