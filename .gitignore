@@ -3,3 +3,6 @@
 
 # PyCharm
 .idea
+
+# pip
+django_friendface.egg-info
