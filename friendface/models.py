@@ -8,7 +8,6 @@ from facebook import parse_signed_request
 import facebook
 import requests
 
-
 class FacebookRequestMixin(object):
     def request(self, path, args = None, post_args = None):
         graph = facebook.GraphAPI(self.access_token)
@@ -176,54 +175,6 @@ class FacebookApplication(models.Model, FacebookRequestMixin):
     def url(self):
         return self.build_canvas_url()
 
-    @classmethod
-    def get_for_request(cls, request):
-        """Find the application responsible for the request.
-        :param request: HttpRequest to check against
-        :returns: py:class:`FacebookApplication`
-        :raises: py:class:`FacebookApplication.DoesNotExist` if there's no
-        match.
-        """
-        # Should we really lookup on request rather than URL? If we get a
-        # request we can figure out if we need to check canvas_url or
-        # website_url based on signed_request, but that might just be a
-        # silly micro optimization.
-        # @todo Make this not grow linearly with the DB.
-        # @todo Filter on app_domains when we have those in the app.
-        # This used to be a giant DB lookup but it was incredibly painful to
-        # debug and it didn't support protocol-independent
-        # (http, https) lookups.
-        # Now we've moved the work from the database here. It's possible that
-        # to move it back in a simplified form if we kept a separate
-        # URL matching table that has website_url, domain, canvas_url etc.
-        # without the protocol and with the foreign key back to the app.
-        current_url = urlparse.urlparse(request.build_absolute_uri())
-        is_secure = request.is_secure()
-        canvas = 'secure_canvas_url' if is_secure else 'canvas_url'
-        page_tab = 'secure_page_tab_url' if is_secure else 'page_tab_url'
-
-        match = None
-        longest_match = None
-
-        for app in FacebookApplication.objects.all():
-            if not request.POST.get('signed_request'):
-                match_urls = (app.website_url, app.mobile_web_url)
-            else:
-                match_urls = (getattr(app, canvas), getattr(app, page_tab))
-
-            for url in match_urls:
-                if not url: continue
-                match_path = urlparse.urlparse(url).path
-
-                if current_url.path.startswith(match_path):
-                    if len(match_path) > longest_match:
-                        longest_match = len(match_path)
-                        match = app
-
-        if not match: raise FacebookApplication.DoesNotExist
-
-        return match
-
     def build_canvas_url(self, location=None):
         """Takes the URL relative to Django and turns it into a URL
         relative this facebook apps canvas page."""
@@ -231,9 +182,9 @@ class FacebookApplication(models.Model, FacebookRequestMixin):
         if location is None:
             return "https://apps.facebook.com/{0}/".format(self.namespace)
         canvas_path = urlparse.urlparse(self.canvas_url).path
-        assert location.startswith(canvas_path), "The application path %s " \
-            "doesn't is not the start of the location path so no canvas url " \
-            "can be derived."
+        assert(location.startswith(canvas_path),
+               "The application path %s doesn't is not the start of the "
+               "location path so no canvas url can be derived.")
         clipped_path = location[len(canvas_path):]
         return urlparse.urljoin(self.url, clipped_path)
 
