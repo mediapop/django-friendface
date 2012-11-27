@@ -1,7 +1,5 @@
-from urlparse import urlparse
 from django.contrib.auth import authenticate, login
-from django.db import connection
-import re
+from django.middleware.csrf import _get_new_csrf_key
 from friendface.models import FacebookApplication
 
 class P3PMiddleware(object):
@@ -30,6 +28,17 @@ class FacebookDecodingMiddleware(object):
             setattr(request, 'FACEBOOK', decoded)
         else:
             setattr(request, 'FACEBOOK', {})
+
+class DisableCsrfProtectionOnDecodedSignedRequest(object):
+    def process_request(self, request):
+        """
+        If we are getting a POST that results in a decoded signed_request
+        we shouldn't do CSRF protection. This is really so that we do not
+        need to do @csrf_exempt on all views that interacts with Facebook.
+        """
+        if request.FACEBOOK:
+            request.META["CSRF_COOKIE"] = _get_new_csrf_key()
+            request.csrf_processing_done = True
 
 
 class FacebookSignedRequestAuthenticationMiddleware(object):

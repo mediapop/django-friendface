@@ -37,6 +37,7 @@ that there needs to be a Profile on the User object.
     MIDDLEWARE_CLASSES += (
         'friendface.middleware.FacebookApplicationMiddleware',
         'friendface.middleware.FacebookDecodingMiddleware',
+        'friendface.middleware.DisableCsrfProtectionOnDecodedSignedRequest',
         'friendface.middleware.FacebookSignedRequestAuthenticationMiddleware',
     )
 
