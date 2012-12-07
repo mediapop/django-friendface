@@ -1,6 +1,6 @@
 from django.contrib.auth import authenticate, login
 from django.middleware.csrf import _get_new_csrf_key
-from friendface.models import FacebookApplication
+from friendface.models import FacebookApplication, FacebookUser
 
 class P3PMiddleware(object):
     def process_response(self, request, response):
@@ -46,7 +46,11 @@ class FacebookSignedRequestAuthenticationMiddleware(object):
     def process_request(self, request):
         if hasattr(request, 'FACEBOOK') and 'user_id' in request.FACEBOOK:
             user_id = request.FACEBOOK['user_id']
-            facebook_user = request.facebook.facebookuser_set.get(uid=user_id)
+            app = request.facebook
+            try:
+                facebook_user = app.facebookuser_set.get(uid=user_id)
+            except FacebookUser.DoesNotExist:
+                return
             authenticated_user = authenticate(facebook_user=facebook_user)
             if authenticated_user and authenticated_user.is_active:
                 login(request, authenticated_user)
