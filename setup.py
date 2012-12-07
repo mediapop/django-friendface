@@ -12,7 +12,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='django-friendface',
-    version='0.2.1',
+    version='0.2.2',
     author='Kit Sunde',
     author_email='kit@mediapop.co',
     url='http://github.com/mediapop/django-friendface',
