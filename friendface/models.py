@@ -14,6 +14,9 @@ class FacebookRequestMixin(object):
         graph = facebook.GraphAPI(self.access_token)
         return graph.request(path, args, post_args)
 
+    def fql(self, path, args=None, post_args=None):
+        graph = facebook.GraphAPI(self.access_token)
+        return graph.fql(path, args, post_args)
 
 class FacebookUser(models.Model, FacebookRequestMixin):
     created = models.DateTimeField(auto_now_add=True)

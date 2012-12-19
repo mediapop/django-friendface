@@ -1,5 +1,7 @@
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from friendface.models import FacebookApplication
+from django.middleware.csrf import _get_new_csrf_key
+from friendface.models import FacebookUser
 
 
 class P3PMiddleware(object):
@@ -22,13 +24,24 @@ class FacebookDecodingMiddleware(object):
     def process_request(self, request):
         #@todo This could use a middleware that finds the FacebookApplication
         # based on which application cand ecode signed_request
-        #@todo Handle cases where decoding the signed_request isn't possible
         signed_request = request.POST.get('signed_request')
         if hasattr(request, 'facebook') and signed_request:
-            decoded = request.facebook.decode(signed_request)
+            decoded = request.facebook.decode(signed_request) or {}
             setattr(request, 'FACEBOOK', decoded)
         else:
             setattr(request, 'FACEBOOK', {})
+
+
+class DisableCsrfProtectionOnDecodedSignedRequest(object):
+    def process_request(self, request):
+        """
+        If we are getting a POST that results in a decoded signed_request
+        we shouldn't do CSRF protection. This is really so that we do not
+        need to do @csrf_exempt on all views that interacts with Facebook.
+        """
+        if request.FACEBOOK:
+            request.META["CSRF_COOKIE"] = _get_new_csrf_key()
+            request.csrf_processing_done = True
 
 
 class FacebookSignedRequestAuthenticationMiddleware(object):
@@ -36,7 +49,12 @@ class FacebookSignedRequestAuthenticationMiddleware(object):
     def process_request(self, request):
         if hasattr(request, 'FACEBOOK') and 'user_id' in request.FACEBOOK:
             user_id = request.FACEBOOK['user_id']
-            facebook_user = request.facebook.facebookuser_set.get(uid=user_id)
-            authenticated_user = authenticate(facebook_user=facebook_user)
-            if authenticated_user and authenticated_user.is_active:
-                login(request, authenticated_user)
+            app = request.facebook
+            try:
+                facebook_user = app.facebookuser_set.get(uid=user_id)
+            except FacebookUser.DoesNotExist:
+                return logout()
+            else:
+                authenticated_user = authenticate(facebook_user=facebook_user)
+                if authenticated_user and authenticated_user.is_active:
+                    login(request, authenticated_user)
