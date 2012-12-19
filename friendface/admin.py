@@ -1,12 +1,14 @@
 from django.contrib import admin
 from friendface.models import (FacebookApplication,
-                                    FacebookPage,
-                                    FacebookUser,
-                                    FacebookTab, FacebookInvitation)
+                               FacebookPage,
+                               FacebookUser,
+                               FacebookTab, FacebookInvitation)
+
 
 class PageTabInline(admin.StackedInline):
     model = FacebookTab
     extra = 0
+
 
 class FacebookPageAdmin(admin.ModelAdmin):
     list_display = ('__unicode__', 'id', 'link', 'likes', 'is_published')
@@ -17,7 +19,6 @@ class FacebookPageAdmin(admin.ModelAdmin):
                        'talking_about_count',
                        'category',
                        'is_published')
-
 
 
 class FacebookApplicationAdmin(admin.ModelAdmin):
@@ -62,7 +63,6 @@ class FacebookApplicationAdmin(admin.ModelAdmin):
                        'user_support_url',
                        'website_url')
 
-
     def has_privacy_policy(self, obj):
         return obj.privacy_policy_url is None
     has_privacy_policy.boolean = True
@@ -93,6 +93,7 @@ class FacebookUserAdmin(admin.ModelAdmin):
                        'last_name', 'timezone', 'religion', 'locale',
                        'location', 'email', 'gender', 'access_token')
 
+
 class FacebookInvitationAdmin(admin.ModelAdmin):
     search_fields = ('sender__first_name',
                      'sender__last_name',
@@ -111,8 +112,6 @@ class FacebookInvitationAdmin(admin.ModelAdmin):
     def is_accepted(self, obj):
         return obj.accepted is not None
     is_accepted.boolean = True
-
-
 
 
 admin.site.register(FacebookPage, FacebookPageAdmin)

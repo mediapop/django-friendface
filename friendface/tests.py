@@ -4,6 +4,7 @@ from django.http import HttpRequest
 from django.test.testcases import TestCase
 from friendface.models import FacebookApplication
 
+
 class FacebookApplicationTestCase(TestCase):
     fixtures = ["application.json"]
 
@@ -35,7 +36,7 @@ class FacebookApplicationMatchingTestCase(TestCase):
         os.environ["HTTPS"] = "off"
         app_url = 'http://www.foo.com/'
         self.request.POST = {'signed_request': 'asdf'}
-        FacebookApplication.objects.update(canvas_url = app_url)
+        FacebookApplication.objects.update(canvas_url=app_url)
         application = FacebookApplication.get_for_request(self.request)
         self.assertIsInstance(application, FacebookApplication)
 
@@ -44,7 +45,7 @@ class FacebookApplicationMatchingTestCase(TestCase):
         app_url = 'https://www.foo.com/'
         self.request.POST = {'signed_request': 'asdf'}
 
-        FacebookApplication.objects.update(secure_canvas_url = app_url)
+        FacebookApplication.objects.update(secure_canvas_url=app_url)
         application = FacebookApplication.get_for_request(self.request)
         self.assertIsInstance(application, FacebookApplication)
 
@@ -52,7 +53,7 @@ class FacebookApplicationMatchingTestCase(TestCase):
         os.environ["HTTPS"] = "off"
         app_url = 'http://www.foo.com/'
         self.request.POST = {'signed_request': 'asdf'}
-        FacebookApplication.objects.update(page_tab_url = app_url)
+        FacebookApplication.objects.update(page_tab_url=app_url)
         application = FacebookApplication.get_for_request(self.request)
         self.assertIsInstance(application, FacebookApplication)
 
@@ -61,7 +62,7 @@ class FacebookApplicationMatchingTestCase(TestCase):
         app_url = 'https://www.foo.com/'
         self.request.POST = {'signed_request': 'asdf'}
 
-        FacebookApplication.objects.update(secure_page_tab_url = app_url)
+        FacebookApplication.objects.update(secure_page_tab_url=app_url)
         application = FacebookApplication.get_for_request(self.request)
         self.assertIsInstance(application, FacebookApplication)
 
@@ -69,7 +70,7 @@ class FacebookApplicationMatchingTestCase(TestCase):
         os.environ["HTTPS"] = "on"
         app_url = 'https://www.foo.com/'
 
-        FacebookApplication.objects.update(website_url = app_url)
+        FacebookApplication.objects.update(website_url=app_url)
         application = FacebookApplication.get_for_request(self.request)
         self.assertIsInstance(application, FacebookApplication)
 
@@ -77,7 +78,7 @@ class FacebookApplicationMatchingTestCase(TestCase):
         os.environ["HTTPS"] = "on"
         app_url = 'https://www.foo.com/'
 
-        FacebookApplication.objects.update(mobile_web_url = app_url)
+        FacebookApplication.objects.update(mobile_web_url=app_url)
         application = FacebookApplication.get_for_request(self.request)
         self.assertIsInstance(application, FacebookApplication)
 
@@ -85,10 +86,9 @@ class FacebookApplicationMatchingTestCase(TestCase):
         os.environ["HTTPS"] = "off"
         app_url = 'http://www.foo.com/'
         self.request.POST = {'other_data': 'asdf'}
-        FacebookApplication.objects.update(canvas_url = app_url)
+        FacebookApplication.objects.update(canvas_url=app_url)
         application = FacebookApplication.get_for_request(self.request)
         self.assertIsInstance(application, FacebookApplication)
-
 
     def test_get_for_request_raises_exception_on_no_match(self):
         with self.assertRaises(FacebookApplication.DoesNotExist):

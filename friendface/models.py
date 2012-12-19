@@ -10,7 +10,7 @@ import requests
 
 
 class FacebookRequestMixin(object):
-    def request(self, path, args = None, post_args = None):
+    def request(self, path, args=None, post_args=None):
         graph = facebook.GraphAPI(self.access_token)
         return graph.request(path, args, post_args)
 
@@ -53,6 +53,7 @@ class FacebookUser(models.Model, FacebookRequestMixin):
     def __unicode__(self):
         return self.full_name()
 
+
 class FacebookAuthorization(models.Model):
     application = models.ForeignKey('FacebookApplication')
     # @todo It might be better if this was a M2M choice field, since then we
@@ -81,7 +82,7 @@ class FacebookAuthorization(models.Model):
 
     def get_authorized_url(self):
         return reverse('friendface.views.authorized',
-                kwargs={'authorization_id': self.id})
+                       kwargs={'authorization_id': self.id})
 
     def get_facebook_authorize_url(self):
         query = urllib.urlencode({
@@ -100,7 +101,8 @@ class FacebookApplication(models.Model, FacebookRequestMixin):
                             blank=True)
     secret = models.CharField(max_length=32,
                               help_text='Application secret')
-    default_scope = models.CharField(max_length=255,
+    default_scope = models.CharField(
+        max_length=255,
         blank=True,
         help_text="Default scope i.e. 'user_likes,email'")
     url = models.URLField(
@@ -112,8 +114,8 @@ class FacebookApplication(models.Model, FacebookRequestMixin):
                                     null=True,
                                     blank=True)
     namespace = models.CharField(max_length=20,
-        blank=True,
-        null=True)
+                                 blank=True,
+                                 null=True)
 
     description = models.TextField(blank=True, null=True)
 
@@ -236,34 +238,36 @@ class FacebookApplication(models.Model, FacebookRequestMixin):
         return urlparse.urljoin(self.url, clipped_path)
 
     def get_access_token(self):
-        response = requests.get("https://graph.facebook.com/oauth/access_token",
-                    params={
-                        'client_id': self.id,
-                        'client_secret': self.secret,
-                        'grant_type': 'client_credentials'
-                    })
+        response = requests.get(
+            "https://graph.facebook.com/oauth/access_token",
+            params={
+                'client_id': self.id,
+                'client_secret': self.secret,
+                'grant_type': 'client_credentials'
+            })
+
         return urlparse.parse_qs(response.text).get('access_token')[0]
 
     def save(self, *args, **kwargs):
         self.access_token = self.get_access_token()
-        graph = facebook.GraphAPI(access_token = self.get_access_token())
+        graph = facebook.GraphAPI(access_token=self.get_access_token())
         # @todo This should be a whitelist rather than a blacklist.
         exclude_fields = ('secret', 'default_scope', 'access_token', 'id')
-        fields =  ",".join(field.name
-            for field in FacebookApplication._meta.fields
-            if field.name not in exclude_fields)
+        fields = ",".join(field.name
+                          for field in FacebookApplication._meta.fields
+                          if field.name not in exclude_fields)
 
         # Facebook gives us a limited amount of fields by default, we need
         # to explicitly request the additoinal ones.
-        app_data = graph.request(unicode(self.id),{'fields': fields})
+        app_data = graph.request(unicode(self.id), {'fields': fields})
 
         for key, value in app_data.items():
             setattr(self, key, value)
         super(FacebookApplication, self).save(*args, **kwargs)
 
     def scrape(self, obj):
-        # Tell facebook to crawl the URL so it both has the data already on first
-        # share and we clear all of those debug ones.
+        # Tell facebook to crawl the URL so it both has the data already on
+        # first share and we clear all of those debug ones.
         data = {
             'id': "{0}{1}".format(self.url, obj.get_absolute_url()),
             'scrape': 'true'
@@ -274,7 +278,7 @@ class FacebookApplication(models.Model, FacebookRequestMixin):
     def get_absolute_url(self):
         return self.url
 
-    def get_authorize_url(self, next = None):
+    def get_authorize_url(self, next=None):
         authorize_url = reverse('friendface.views.authorize',
                                 kwargs={'application_id': self.id})
         if not next is None:
@@ -283,6 +287,7 @@ class FacebookApplication(models.Model, FacebookRequestMixin):
 
     def decode(self, signed_request):
         return parse_signed_request(signed_request, str(self.secret))
+
 
 class FacebookTab(models.Model):
     """In this case we should only ever have one FacebookTab, but I'm setting
@@ -295,8 +300,8 @@ class FacebookTab(models.Model):
 
     def get_absolute_url(self):
         if self.page.name_space:
-            return "{0}app_{1}".format( self.page.get_absolute_url(),
-                                        self.application_id)
+            return "{0}app_{1}".format(self.page.get_absolute_url(),
+                                       self.application_id)
         return "{0}?sk=app_{1}".format(self.page.get_absolute_url(),
                                        self.application_id)
 
@@ -314,8 +319,8 @@ class FacebookInvitation(models.Model):
     receiver = models.ForeignKey(FacebookUser,
                                  related_name='facebookinvitations_received')
     accepted = models.DateTimeField(null=True)
-    next = models.URLField(
-        help_text='By default the user gets sent to the application canvas page.')
+    next = models.URLField(help_text=('By default the user gets sent to the '
+                                      'application canvas page.'))
 
     class Meta:
         unique_together = ('request_id', 'receiver')

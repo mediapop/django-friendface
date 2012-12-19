@@ -1,12 +1,11 @@
-from urlparse import urlparse
 from django.contrib.auth import authenticate, login
-from django.db import connection
-import re
 from friendface.models import FacebookApplication
+
 
 class P3PMiddleware(object):
     def process_response(self, request, response):
-        response['P3P'] = "Nonsense https://support.google.com/accounts/bin/answer.py?hl=en&answer=151657"
+        response['P3P'] = ("Nonsense https://support.google.com/accounts/bin/"
+                           "answer.py?hl=en&answer=151657")
         return response
 
 

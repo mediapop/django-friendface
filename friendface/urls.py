@@ -1,3 +1,4 @@
+# flake8: noqa
 from django.conf.urls import *
 
 urlpatterns = patterns('friendface.views',

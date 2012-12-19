@@ -1,4 +1,3 @@
-from urlparse import urlparse, urljoin
 from django import template
 from django.templatetags.future import url
 

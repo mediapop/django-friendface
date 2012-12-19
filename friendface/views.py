@@ -8,10 +8,11 @@ from django.shortcuts import render, redirect
 from django.utils.baseconv import BASE62_ALPHABET
 from facebook import GraphAPI
 from friendface.models import (FacebookApplication, FacebookAuthorization,
-                                    FacebookUser, FacebookInvitation)
+                               FacebookUser, FacebookInvitation)
+
 
 def authorized(request, authorization_id):
-    auth = FacebookAuthorization.objects.get(id = authorization_id)
+    auth = FacebookAuthorization.objects.get(id=authorization_id)
     if request.GET.get('error'):
         # @todo Handle user not wanting to auth.
         print "error"
@@ -29,7 +30,7 @@ def authorized(request, authorization_id):
     request_data = GraphAPI(access_token).get_object('me')
     facebook_user, created = FacebookUser.objects.get_or_create(
         uid=request_data['id'],
-        application = auth.application)
+        application=auth.application)
     facebook_user.access_token = access_token
     facebook_user.first_name = request_data['first_name']
     facebook_user.last_name = request_data['last_name']
@@ -47,9 +48,9 @@ def authorized(request, authorization_id):
         # FacebookUser
         username = "".join(random.choice(BASE62_ALPHABET) for i in xrange(30))
         user = User.objects.create_user(username=username)
-        user.first_name=facebook_user.first_name
-        user.last_name=facebook_user.last_name
-        user.email=facebook_user.email
+        user.first_name = facebook_user.first_name
+        user.last_name = facebook_user.last_name
+        user.email = facebook_user.email
         user.set_unusable_password()
 
         try:
@@ -81,7 +82,7 @@ def authorize(request, application_id):
     scope = request.GET.get("perms", app.default_scope)
     assert(not next is None)
     auth = FacebookAuthorization.objects.create(next=next,
-                                                application = app,
+                                                application=app,
                                                 scope=scope)
     # Catch 22 problem :(
     auth.redirect_uri = request.build_absolute_uri(auth.get_authorized_url())
@@ -94,6 +95,7 @@ def authorize(request, application_id):
 
 def channel(request):
     return render(request, 'channel.html')
+
 
 def record_facebook_invitation(request):
     profile = request.user.get_profile()
@@ -112,4 +114,5 @@ def record_facebook_invitation(request):
             sender=profile.facebook,
             receiver=user
         )
+
     return HttpResponse(json.dumps({'result': 'ok'}))

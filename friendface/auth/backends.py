@@ -7,6 +7,7 @@ from friendface.models import FacebookUser
 _lowercase_profile_name = settings.AUTH_PROFILE_MODULE.split(".")[1].lower()
 _facebook_relation = '{0}__facebook'.format(_lowercase_profile_name)
 
+
 class FacebookBackend(object):
     """
     Authenticate against a facebook_user object.
