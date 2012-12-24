@@ -144,10 +144,10 @@ class FacebookAppAuthMixin(object):
             return self.redirect(self.auth_url)
         ## With changes to friendface these lines shouldn't be needed since
         ## the middleware handles logout before it goes this far.
-        # else:
-        #     fb_user = request.user.get_profile().facebook
-        #     if not fb_user or fb_user.application != request.facebook:
-        #         return redirect(self.auth_url)
+        else:
+            fb_user = request.user.get_profile().facebook
+            if not fb_user or fb_user.application != request.facebook:
+                return redirect(self.auth_url)
 
         return super(FacebookAppAuthMixin, self).dispatch(request, *args,
                                                           **kwargs)
