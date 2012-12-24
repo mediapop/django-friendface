@@ -53,7 +53,7 @@ class FacebookSignedRequestAuthenticationMiddleware(object):
             try:
                 facebook_user = app.facebookuser_set.get(uid=user_id)
             except FacebookUser.DoesNotExist:
-                return logout()
+                return logout(request)
             else:
                 authenticated_user = authenticate(facebook_user=facebook_user)
                 if authenticated_user and authenticated_user.is_active:
