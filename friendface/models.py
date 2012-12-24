@@ -18,6 +18,7 @@ class FacebookRequestMixin(object):
         graph = facebook.GraphAPI(self.access_token)
         return graph.fql(path, args, post_args)
 
+
 class FacebookUser(models.Model, FacebookRequestMixin):
     created = models.DateTimeField(auto_now_add=True)
     uid = models.BigIntegerField()
@@ -324,6 +325,33 @@ class FacebookInvitation(models.Model):
     accepted = models.DateTimeField(null=True)
     next = models.URLField(help_text=('By default the user gets sent to the '
                                       'application canvas page.'))
+
+    @classmethod
+    def create_with_receiver(cls, receiver, request_id, application, sender,
+                             **kwargs):
+        '''
+        Arguments:
+          receiver: The Facebook UID of the person who receives the request
+          request_id: Facebooks request id
+          application: THe Facebook application that the request is for
+          sender: the FacebookUser who sent the request
+
+        Optional arguments:
+          next: The URL the user will be forcefully be redirected to after
+                the invitation has been accepted.
+        '''
+        receiver, _ = FacebookUser.objects.get_or_create(
+            uid=receiver,
+            application=application
+        )
+
+        return FacebookInvitation.objects.create(
+            request_id=request_id,
+            receiver=receiver,
+            sender=sender,
+            application=application,
+            **kwargs
+        )
 
     class Meta:
         unique_together = ('request_id', 'receiver')

@@ -104,15 +104,50 @@ def record_facebook_invitation(request):
     request_id = request.POST.get('request')
 
     for recipient in request.POST.getlist('to[]'):
-        user, created = FacebookUser.objects.get_or_create(
-            uid=recipient,
-            application=profile.facebook.application)
-
-        FacebookInvitation.objects.create(
+        FacebookInvitation.create_with_receiver(
+            receiver=recipient,
             request_id=request_id,
             application=application,
-            sender=profile.facebook,
-            receiver=user
+            sender=profile.facebook
         )
 
     return HttpResponse(json.dumps({'result': 'ok'}))
+
+
+class FacebookPostAsGetMixin(object):
+    def post(self, *args, **kwargs):
+        return self.get(*args, **kwargs)
+
+
+class FacebookAppAuthMixin(object):
+    auth_url = ''
+
+    def auth_redirect_back(self):
+        '''
+        Define the URL the request should be redirected to after the app has
+        been authorized here.
+        '''
+        raise ValueError('An URL to redirect to after app auth expected.')
+
+    def _generate_auth_url(self):
+        next = self.auth_redirect_back()
+        self.auth_url = self.request.facebook.get_authorize_url(next)
+
+    def redirect(self, url):
+        return redirect(url)
+
+    def dispatch(self, request, *args, **kwargs):
+        self.request = request
+
+        self._generate_auth_url()
+        if not request.user.is_authenticated():
+            return self.redirect(self.auth_url)
+        ## With changes to friendface these lines shouldn't be needed since
+        ## the middleware handles logout before it goes this far.
+        # else:
+        #     fb_user = request.user.get_profile().facebook
+        #     if not fb_user or fb_user.application != request.facebook:
+        #         return redirect(self.auth_url)
+
+        return super(FacebookAppAuthMixin, self).dispatch(request, *args,
+                                                          **kwargs)
