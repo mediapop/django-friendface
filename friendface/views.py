@@ -147,7 +147,7 @@ class FacebookAppAuthMixin(object):
         else:
             fb_user = request.user.get_profile().facebook
             if not fb_user or fb_user.application != request.facebook:
-                return redirect(self.auth_url)
+                return self.redirect(self.auth_url)
 
         return super(FacebookAppAuthMixin, self).dispatch(request, *args,
                                                           **kwargs)

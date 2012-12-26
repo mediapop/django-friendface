@@ -54,6 +54,19 @@ class FacebookUser(models.Model, FacebookRequestMixin):
             return u"Unknown"
         return u"{0} {1}".format(self.first_name, self.last_name)
 
+    def send_notification(self, message, app_access_token, href=None,
+                          ref=None):
+        r = requests.post(
+            'https://graph.facebook.com/{0}/notifications'.format(self.uid),
+            params={
+                'access_token': app_access_token,
+                'href': href,
+                'template': message,
+                'ref': ref
+            })
+
+        return r.json
+
     def __unicode__(self):
         return self.full_name()
 
@@ -291,6 +304,12 @@ class FacebookApplication(models.Model, FacebookRequestMixin):
 
     def decode(self, signed_request):
         return parse_signed_request(signed_request, str(self.secret))
+
+    def send_notification(self, user, message, href=None, ref=None):
+        return user.send_notification(message=message,
+                                      app_access_token=self.access_token,
+                                      href=href,
+                                      ref=ref)
 
 
 class FacebookTab(models.Model):
