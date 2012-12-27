@@ -54,8 +54,11 @@ class FacebookUser(models.Model, FacebookRequestMixin):
             return u"Unknown"
         return u"{0} {1}".format(self.first_name, self.last_name)
 
-    def send_notification(self, message, app_access_token, href=None,
+    def send_notification(self, message, app_access_token=None, href=None,
                           ref=None):
+        if app_access_token is None:
+            app_access_token = self.application.access_token
+
         r = requests.post(
             'https://graph.facebook.com/{0}/notifications'.format(self.uid),
             params={
