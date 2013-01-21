@@ -7,6 +7,7 @@ from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.utils.baseconv import BASE62_ALPHABET
 from facebook import GraphAPI
+from django.views.generic import TemplateView
 from friendface.models import (FacebookApplication, FacebookAuthorization,
                                FacebookUser, FacebookInvitation)
 
@@ -113,6 +114,15 @@ def record_facebook_invitation(request):
 
     return HttpResponse(json.dumps({'result': 'ok'}))
 
+
+class FacebookEnabledTemplateView(TemplateView):
+    """ Since facebook sends POST requests instead of GETs when we are inside of
+    facebook, we need to change the path to self.get. """
+    def post(self, request, *args, **kwargs):
+        if request.FACEBOOK:
+            return self.get(request, *args, **kwargs)
+        else:
+            return self.post(request, *args, **kwargs)
 
 class FacebookPostAsGetMixin(object):
     def post(self, *args, **kwargs):
