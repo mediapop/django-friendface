@@ -115,18 +115,16 @@ def record_facebook_invitation(request):
     return HttpResponse(json.dumps({'result': 'ok'}))
 
 
-class FacebookEnabledTemplateView(TemplateView):
-    """ Since facebook sends POST requests instead of GETs when we are inside of
-    facebook, we need to change the path to self.get. """
+class FacebookPostAsGetMixin(object):
+    """ Treat facebook requests with a decoded signed_request as GET. """
     def post(self, request, *args, **kwargs):
         if request.FACEBOOK:
             return self.get(request, *args, **kwargs)
         else:
             return self.post(request, *args, **kwargs)
 
-class FacebookPostAsGetMixin(object):
-    def post(self, *args, **kwargs):
-        return self.get(*args, **kwargs)
+class FacebookEnabledTemplateView(FacebookPostAsGetMixin, TemplateView):
+    """ So that we can use TemplateView in urls.py even when on Facebook. """
 
 
 class FacebookAppAuthMixin(object):
