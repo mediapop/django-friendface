@@ -16,7 +16,6 @@ def authorized(request, authorization_id):
     auth = FacebookAuthorization.objects.get(id=authorization_id)
     if request.GET.get('error'):
         # @todo Handle user not wanting to auth.
-        print "error"
         return redirect(auth.get_absolute_url())
 
     # @todo We are probably better of using some kind of
@@ -25,7 +24,6 @@ def authorized(request, authorization_id):
     try:
         access_token = auth.get_access_token(code)[0]
     except urllib2.HTTPError:
-        print "Cannot get access token"
         return redirect(auth.get_facebook_authorize_url())
 
     request_data = GraphAPI(access_token).get_object('me')
