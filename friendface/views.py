@@ -8,6 +8,7 @@ from django.shortcuts import render, redirect
 from django.utils.baseconv import BASE62_ALPHABET
 from facebook import GraphAPI
 from django.views.generic import TemplateView
+from friendface.shortcuts import redirectjs
 from friendface.models import (FacebookApplication, FacebookAuthorization,
                                FacebookUser, FacebookInvitation)
 
@@ -66,9 +67,7 @@ def authorized(request, authorization_id):
             #@todo handle user not active.
         #@todo what should happen if the user doesn't get logged in?
 
-    redirect_to = auth.next
-
-    return render(request, 'js-redirect-to.html', locals())
+    return redirectjs(auth.next)
 
 
 def authorize(request, application_id):
@@ -87,9 +86,7 @@ def authorize(request, application_id):
     auth.redirect_uri = request.build_absolute_uri(auth.get_authorized_url())
     auth.save()
 
-    redirect_to = auth.get_facebook_authorize_url()
-
-    return render(request, 'js-redirect-to.html', locals())
+    return redirectjs(auth.get_facebook_authorize_url())
 
 
 def channel(request):
