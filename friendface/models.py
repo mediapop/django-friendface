@@ -14,9 +14,10 @@ class FacebookRequestMixin(object):
         graph = facebook.GraphAPI(self.access_token)
         return graph.request(path, args, post_args)
 
-    def fql(self, path, args=None, post_args=None):
-        graph = facebook.GraphAPI(self.access_token)
-        return graph.fql(path, args, post_args)
+    def fql(self, query):
+        params = {'access_token': self.access_token, 'q': query}
+        response = requests.get("https://graph.facebook.com/fql", params=params)
+        return response.json
 
 
 class FacebookUser(models.Model, FacebookRequestMixin):
