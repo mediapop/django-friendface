@@ -3,6 +3,8 @@ import random
 import urllib2
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User, SiteProfileNotAvailable
+from django.core.exceptions import ImproperlyConfigured, ValidationError, ObjectDoesNotExist
+from django.core.validators import URLValidator
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.utils.baseconv import BASE62_ALPHABET
@@ -154,3 +156,53 @@ class FacebookAppAuthMixin(object):
 
         return super(FacebookAppAuthMixin, self).dispatch(request, *args,
                                                           **kwargs)
+
+class LikeGateMixin(object):
+    # @todo If we have concept of a canonical page, that could be the default
+    # @todo If we have permissions escalation we could request user_likes on
+    # failing to detect a like.
+    # @todo Should cache likes.
+    # @todo Allow for multiple targets.
+    like_gate_template = None
+    like_gate_target = None
+
+    def get_like_gate_template(self):
+        if not self.like_gate_template:
+            raise ImproperlyConfigured(
+                "LikeGateMixin requires get_fan_gate_template to return a "
+                "template by being overridden or having like_gate_template set")
+        return self.like_gate_template
+
+    def dispatch(self, request, *args, **kwargs):
+        page = request.FACEBOOK.get('page', {})
+        if page and not page['liked'] and (not self.like_gate_target or
+                     int(page['id']) == self.like_gate_target):
+            return render(request, self.get_like_gate_template())
+        elif self.like_gate_target and page.get('id') != self.like_gate_target:
+            try: #@todo Drop get_profile() for 1.5
+                facebook_user = request.user.get_profile().facebook
+                if facebook_user is None: raise ObjectDoesNotExist
+            except ObjectDoesNotExist:
+                raise ImproperlyConfigured("LikeGate with target must come "
+                                           "after facebook auth.")
+            if isinstance(self.like_gate_target, int):
+                response = facebook_user.request(
+                    '/me/likes/%d' % self.like_gate_target)
+            else:
+                validator = URLValidator()
+                try:
+                    validator(self.like_gate_target)
+                    # There's a facebook issue on url matching.
+                    # https://developers.facebook.com/bugs/155957594556018
+                    response = facebook_user.fql(
+                        'SELECT url '
+                        'FROM url_like '
+                        'WHERE user_id = me() '
+                        '   AND strpos(url, "%s") = 0' % self.like_gate_target)
+                except ValidationError:
+                    raise ImproperlyConfigured("like_gate_target must be "
+                                               "either None, uid or a URL")
+            if not response['data']:
+                return render(request, self.get_like_gate_template())
+
+        return super(LikeGateMixin, self).dispatch(request, *args, **kwargs)
