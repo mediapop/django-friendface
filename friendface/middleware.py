@@ -23,7 +23,7 @@ class FacebookApplicationMiddleware(object):
 class FacebookDecodingMiddleware(object):
     def process_request(self, request):
         #@todo This could use a middleware that finds the FacebookApplication
-        # based on which application cand ecode signed_request
+        # based on which application can decode signed_request
         signed_request = request.POST.get('signed_request')
         if hasattr(request, 'facebook') and signed_request:
             decoded = request.facebook.decode(signed_request) or {}
