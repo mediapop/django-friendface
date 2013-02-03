@@ -6,7 +6,7 @@ from friendface.models import FacebookApplication
 
 
 class FacebookApplicationTestCase(TestCase):
-    fixtures = ["application.json"]
+    fixtures = ["friendface/application.json"]
 
     def test_authorize_url(self):
         app = FacebookApplication.objects.get()
@@ -25,7 +25,7 @@ class FacebookApplicationTestCase(TestCase):
 
 
 class FacebookApplicationMatchingTestCase(TestCase):
-    fixtures = ["application.json"]
+    fixtures = ["friendface/application.json"]
 
     def setUp(self):
         self.request = HttpRequest()
