@@ -12,18 +12,19 @@ from setuptools import setup, find_packages
 
 setup(
     name='django-friendface',
-    version='0.2.3',
+    version='0.2.4',
     author='Kit Sunde',
     author_email='kit@mediapop.co',
     url='http://github.com/mediapop/django-friendface',
     description='Django-friendface is an easy implementation of the Facebook API\'s for Django',
     long_description=__doc__,
-    packages=find_packages(exclude=("tests",)),
+    packages=find_packages(),
     zip_safe=False,
     install_requires=[
         # This seem to install from a different source, why?
         #'facebook-sdk==0.3.0',
-        'requests==0.14.0'
+        'requests==0.14.0',
+        'mock==1.0.1',
     ],
     dependency_links = [
         #'git+git://github.com/Celc/facebook-sdk.git#egg=facebook-sdk',

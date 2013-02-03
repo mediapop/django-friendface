@@ -1,8 +1,58 @@
+# -*- encoding: utf-8 -*-
+from django.contrib.auth.models import User
+from facebook import GraphAPI
 import os
-from django.conf import settings
+from mock import patch
 from django.http import HttpRequest
 from django.test.testcases import TestCase
-from friendface.models import FacebookApplication
+from friendface.models import FacebookApplication, FacebookAuthorization, FacebookUser
+
+TEST_USER = {
+    'id': 12345678,
+    'first_name': 'Kit',
+    'last_name': 'Sunde',
+    'email': 'foo@foo.com'
+}
+
+
+class FacebookAuthorizedTestCase(TestCase):
+    fixtures = ["friendface/application.json"]
+
+    def setUp(self):
+        patcher = patch.object(FacebookAuthorization,
+                               'get_access_token',
+                               lambda a, b: u'☃')
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        patcher = patch.object(GraphAPI, 'get_object', lambda a, b: TEST_USER)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+
+        app = FacebookApplication.objects.get()
+        self.auth = FacebookAuthorization.objects.create(application=app,
+                                             next='/',
+                                             scope='',
+                                             redirect_uri='')
+
+
+    def test_creates_facebook_user_if_not_exists(self):
+        self.assertEqual(FacebookUser.objects.count(), 0)
+        self.client.get(self.auth.get_absolute_url())
+        self.assertEqual(FacebookUser.objects.count(), 1)
+
+    def test_creates_new_user_if_not_exists(self):
+        self.assertEqual(User.objects.count(), 0)
+        self.client.get(self.auth.get_absolute_url())
+        self.assertEqual(User.objects.count(), 1)
+
+    def test_creating_user_sets_details_from_facebook(self):
+        self.client.get(self.auth.get_absolute_url())
+        user = User.objects.get()
+        facebook_user = FacebookUser.objects.get()
+        self.assertEqual(user.email, facebook_user.email)
+        self.assertEqual(user.first_name, facebook_user.first_name)
+        self.assertEqual(user.last_name, facebook_user.last_name)
 
 
 class FacebookApplicationTestCase(TestCase):
