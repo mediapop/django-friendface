@@ -66,6 +66,14 @@ class FacebookAuthorizationMixinTestCase(TestCase):
             'next': 'http://localserver/same-url/'})
         self.assertEqual(response._headers['location'][1], target)
 
+    def test_auth_on_facebook_return_to_canvas_url(self):
+        self.request.FACEBOOK['not'] = 'false'
+        response = FacebookAppAuthMixin().dispatch(self.request)
+        setattr(response, 'client', self.client)
+        target = self.base_url + "?" + urllib.urlencode({
+            'next': 'https://apps.facebook.com/mhe/same-url/'})
+        self.assertEqual(response._headers['location'][1], target)
+
 
 class environment:
     """
