@@ -186,24 +186,7 @@ class LikeGateMixin(object):
             except ObjectDoesNotExist:
                 raise ImproperlyConfigured("LikeGate with target must come "
                                            "after facebook auth.")
-            if isinstance(self.like_gate_target, int):
-                response = facebook_user.request(
-                    '/me/likes/%d' % self.like_gate_target)
-            else:
-                validator = URLValidator()
-                try:
-                    validator(self.like_gate_target)
-                    # There's a facebook issue on url matching.
-                    # https://developers.facebook.com/bugs/155957594556018
-                    response = facebook_user.fql(
-                        'SELECT url '
-                        'FROM url_like '
-                        'WHERE user_id = me() '
-                        '   AND strpos(url, "%s") = 0' % self.like_gate_target)
-                except ValidationError:
-                    raise ImproperlyConfigured("like_gate_target must be "
-                                               "either None, uid or a URL")
-            if not response['data']:
+            if not facebook_user.has_liked(self.like_gate_target):
                 return render(request, self.get_like_gate_template())
 
         return super(LikeGateMixin, self).dispatch(request, *args, **kwargs)

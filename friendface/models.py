@@ -1,7 +1,9 @@
 import urllib
 import urllib2
 import urlparse
+from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
+from django.core.validators import URLValidator
 from django.db import models
 from django.template.defaultfilters import slugify
 from facebook import parse_signed_request
@@ -49,6 +51,18 @@ class FacebookUser(models.Model, FacebookRequestMixin):
 
     def photo_url(self):
         return "https://graph.facebook.com/{0}/picture".format(self.uid)
+
+    def has_liked(self, target):
+        """ target must either be a URL or a facebook id. """
+        try:
+            response = self.request('/me/likes/%d' % int(target))
+        except ValueError:
+            response = self.fql(
+                'SELECT url '
+                'FROM url_like '
+                'WHERE user_id = me() '
+                '   AND strpos(url, "%s") = 0' % target)
+        return not not response['data']
 
     def full_name(self):
         if not self.first_name and not self.last_name:
