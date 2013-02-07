@@ -71,6 +71,23 @@ class FacebookAuthorizationMixinTestCase(TestCase):
         self.assertEqual(response._headers['location'][1], target)
 
 
+class environment:
+    """
+    Helper for setting environmental variables, merges. Usages:
+    with environment({'HTTPS': 'off'}):
+       pass
+    """
+    def __init__(self, envs):
+        self.envs = envs
+
+    def __enter__(self):
+        self.old = os.environ
+        os.environ = dict(os.environ, **self.envs)
+
+    def __exit__(self, type, value, traceback):
+        os.environ = self.old
+
+
 class FacebookApplicationMatchingTestCase(TestCase):
     fixtures = ["application.json"]
 
@@ -80,62 +97,62 @@ class FacebookApplicationMatchingTestCase(TestCase):
         self.request.META = {'SERVER_NAME': 'www.foo.com', 'SERVER_PORT': 80}
 
     def test_get_for_request_matches_canvas_url(self):
-        os.environ["HTTPS"] = "off"
-        app_url = 'http://www.foo.com/'
-        self.request.POST = {'signed_request': 'asdf'}
-        FacebookApplication.objects.update(canvas_url=app_url)
-        application = FacebookApplication.get_for_request(self.request)
-        self.assertIsInstance(application, FacebookApplication)
+        with environment({'HTTPS': 'off'}):
+            app_url = 'http://www.foo.com/'
+            self.request.POST = {'signed_request': 'asdf'}
+            FacebookApplication.objects.update(canvas_url=app_url)
+            application = FacebookApplication.get_for_request(self.request)
+            self.assertIsInstance(application, FacebookApplication)
 
     def test_get_for_request_matches_secure_canvas_url(self):
-        os.environ["HTTPS"] = "on"
-        app_url = 'https://www.foo.com/'
-        self.request.POST = {'signed_request': 'asdf'}
+        with environment({'HTTPS': 'on'}):
+            app_url = 'https://www.foo.com/'
+            self.request.POST = {'signed_request': 'asdf'}
 
-        FacebookApplication.objects.update(secure_canvas_url=app_url)
-        application = FacebookApplication.get_for_request(self.request)
-        self.assertIsInstance(application, FacebookApplication)
+            FacebookApplication.objects.update(secure_canvas_url=app_url)
+            application = FacebookApplication.get_for_request(self.request)
+            self.assertIsInstance(application, FacebookApplication)
 
     def test_get_for_request_matches_page_tab_url(self):
-        os.environ["HTTPS"] = "off"
-        app_url = 'http://www.foo.com/'
-        self.request.POST = {'signed_request': 'asdf'}
-        FacebookApplication.objects.update(page_tab_url=app_url)
-        application = FacebookApplication.get_for_request(self.request)
-        self.assertIsInstance(application, FacebookApplication)
+        with environment({'HTTPS': 'off'}):
+            app_url = 'http://www.foo.com/'
+            self.request.POST = {'signed_request': 'asdf'}
+            FacebookApplication.objects.update(page_tab_url=app_url)
+            application = FacebookApplication.get_for_request(self.request)
+            self.assertIsInstance(application, FacebookApplication)
 
     def test_get_for_request_matches_secure_page_tab_url(self):
-        os.environ["HTTPS"] = "on"
-        app_url = 'https://www.foo.com/'
-        self.request.POST = {'signed_request': 'asdf'}
+        with environment({'HTTPS': 'on'}):
+            app_url = 'https://www.foo.com/'
+            self.request.POST = {'signed_request': 'asdf'}
 
-        FacebookApplication.objects.update(secure_page_tab_url=app_url)
-        application = FacebookApplication.get_for_request(self.request)
-        self.assertIsInstance(application, FacebookApplication)
+            FacebookApplication.objects.update(secure_page_tab_url=app_url)
+            application = FacebookApplication.get_for_request(self.request)
+            self.assertIsInstance(application, FacebookApplication)
 
     def test_get_for_request_matches_website_url(self):
-        os.environ["HTTPS"] = "on"
-        app_url = 'https://www.foo.com/'
+        with environment({'HTTPS': 'on'}):
+            app_url = 'https://www.foo.com/'
 
-        FacebookApplication.objects.update(website_url=app_url)
-        application = FacebookApplication.get_for_request(self.request)
-        self.assertIsInstance(application, FacebookApplication)
+            FacebookApplication.objects.update(website_url=app_url)
+            application = FacebookApplication.get_for_request(self.request)
+            self.assertIsInstance(application, FacebookApplication)
 
     def test_get_for_request_matches_mobile_url(self):
-        os.environ["HTTPS"] = "on"
-        app_url = 'https://www.foo.com/'
+        with environment({'HTTPS': 'on'}):
+            app_url = 'https://www.foo.com/'
 
-        FacebookApplication.objects.update(mobile_web_url=app_url)
-        application = FacebookApplication.get_for_request(self.request)
-        self.assertIsInstance(application, FacebookApplication)
+            FacebookApplication.objects.update(mobile_web_url=app_url)
+            application = FacebookApplication.get_for_request(self.request)
+            self.assertIsInstance(application, FacebookApplication)
 
     def test_get_for_request_matches_canvas_url_with_no_signed_request(self):
-        os.environ["HTTPS"] = "off"
-        app_url = 'http://www.foo.com/'
-        self.request.POST = {'other_data': 'asdf'}
-        FacebookApplication.objects.update(canvas_url=app_url)
-        application = FacebookApplication.get_for_request(self.request)
-        self.assertIsInstance(application, FacebookApplication)
+        with environment({'HTTPS': 'off'}):
+            app_url = 'http://www.foo.com/'
+            self.request.POST = {'other_data': 'asdf'}
+            FacebookApplication.objects.update(canvas_url=app_url)
+            application = FacebookApplication.get_for_request(self.request)
+            self.assertIsInstance(application, FacebookApplication)
 
     def test_get_for_request_raises_exception_on_no_match(self):
         with self.assertRaises(FacebookApplication.DoesNotExist):
