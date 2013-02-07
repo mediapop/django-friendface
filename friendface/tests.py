@@ -39,35 +39,31 @@ class FacebookApplicationTestCase(TestCase):
 
 
 class FacebookAuthorizationMixinTestCase(TestCase):
-    def test_anonymous_users_get_authenticated(self):
-        request = HttpRequest()
-        request.META = {'SERVER_NAME': 'localserver', 'SERVER_PORT': 80}
-        setattr(request,'user', AnonymousUser())
-        setattr(request,'FACEBOOK', {})
-        setattr(request, 'facebook', FacebookApplication(id=1))
-        response = FacebookAppAuthMixin().dispatch(request)
-        setattr(response, 'client', self.client)
-        target = reverse(
+    fixtures = ["application.json"]
+
+    def setUp(self):
+        self.request = HttpRequest()
+        self.request.META = {'SERVER_NAME': 'localserver', 'SERVER_PORT': 80}
+        self.request.path = '/same-url/'
+        setattr(self.request,'user', AnonymousUser())
+        setattr(self.request,'FACEBOOK', {})
+        setattr(self.request, 'facebook', FacebookApplication.objects.get())
+        self.base_url = reverse(
             'friendface.views.authorize',
-            kwargs={'application_id': 1}) + "?" + urllib.urlencode({
-            'next': 'http://localserver'
-        })
+            kwargs={'application_id': self.request.facebook.id})
+
+    def test_anonymous_users_get_authenticated(self):
+        response = FacebookAppAuthMixin().dispatch(self.request)
+        setattr(response, 'client', self.client)
+        target = self.base_url + "?" + urllib.urlencode({
+            'next': 'http://localserver/same-url/'})
         self.assertEqual(response._headers['location'][1], target)
 
     def test_auth_return_to_same_url(self):
-        request = HttpRequest()
-        request.META = {'SERVER_NAME': 'localserver', 'SERVER_PORT': 80}
-        request.path = '/same-url/'
-        setattr(request,'user', AnonymousUser())
-        setattr(request,'FACEBOOK', {})
-        setattr(request, 'facebook', FacebookApplication(id=1))
-        response = FacebookAppAuthMixin().dispatch(request)
+        response = FacebookAppAuthMixin().dispatch(self.request)
         setattr(response, 'client', self.client)
-        target = reverse(
-            'friendface.views.authorize',
-            kwargs={'application_id': 1}) + "?" + urllib.urlencode({
-            'next': 'http://localserver/same-url/'
-        })
+        target = self.base_url + "?" + urllib.urlencode({
+            'next': 'http://localserver/same-url/'})
         self.assertEqual(response._headers['location'][1], target)
 
 
