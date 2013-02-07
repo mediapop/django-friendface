@@ -130,17 +130,19 @@ class FacebookAppAuthMixin(object):
     auth_url = ''
 
     def dispatch(self, request, *args, **kwargs):
-        try:
-            # @todo In Django 1.5 it should be possible to reduce this to:
-            # request.user.facebook.application == request.facebook
-            facebook_user = request.user.get_profile().facebook
-            if request.facebook != facebook_user.application:
-                raise ObjectDoesNotExist # @todo Pick a better exception?
+        if request.user.is_authenticated():
+            try:
+                # @todo In Django 1.5 it should be possible to reduce this to:
+                # request.user.facebook.application == request.facebook
+                facebook_user = request.user.get_profile().facebook
+                if request.facebook != facebook_user.application:
+                    raise ObjectDoesNotExist # @todo Pick a better exception?
 
-            return super(FacebookAppAuthMixin, self).dispatch(request, *args,
-                                                              **kwargs)
-        except ObjectDoesNotExist:
-            pass
+                return super(FacebookAppAuthMixin, self).dispatch(request,
+                                                                  *args,
+                                                                  **kwargs)
+            except ObjectDoesNotExist:
+                pass
         if not self.auth_url:
             if request.FACEBOOK:
                 self.auth_url = request.facebook.build_canvas_url(request.path)

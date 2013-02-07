@@ -1,8 +1,11 @@
+import urllib
+from django.contrib.auth.models import AnonymousUser
+from django.core.urlresolvers import reverse
 import os
-from django.conf import settings
 from django.http import HttpRequest
 from django.test.testcases import TestCase
 from friendface.models import FacebookApplication
+from friendface.views import FacebookAppAuthMixin
 
 
 class FacebookApplicationTestCase(TestCase):
@@ -22,6 +25,23 @@ class FacebookApplicationTestCase(TestCase):
         self.client.get(path=app.get_authorize_url(next))
         auth = app.facebookauthorization_set.get()
         self.assertEqual(next, auth.next)
+
+
+class FacebookAuthorizationMixinTestCase(TestCase):
+    def test_anonymous_users_get_authenticated(self):
+        request = HttpRequest()
+        request.META = {'SERVER_NAME': 'localserver', 'SERVER_PORT': 80}
+        setattr(request,'user', AnonymousUser())
+        setattr(request,'FACEBOOK', {})
+        setattr(request, 'facebook', FacebookApplication(id=1))
+        response = FacebookAppAuthMixin().dispatch(request)
+        setattr(response, 'client', self.client)
+        target = reverse(
+            'friendface.views.authorize',
+            kwargs={'application_id': 1}) + "?" + urllib.urlencode({
+            'next': 'http://localserver'
+        })
+        self.assertEqual(response._headers['location'][1], target)
 
 
 class FacebookApplicationMatchingTestCase(TestCase):
