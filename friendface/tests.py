@@ -155,5 +155,7 @@ class FacebookApplicationMatchingTestCase(TestCase):
             self.assertIsInstance(application, FacebookApplication)
 
     def test_get_for_request_raises_exception_on_no_match(self):
+        FacebookApplication.objects.update(canvas_url='foo',
+                                           secure_canvas_url='foo')
         with self.assertRaises(FacebookApplication.DoesNotExist):
             FacebookApplication.get_for_request(self.request)
