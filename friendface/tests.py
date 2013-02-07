@@ -43,6 +43,22 @@ class FacebookAuthorizationMixinTestCase(TestCase):
         })
         self.assertEqual(response._headers['location'][1], target)
 
+    def test_auth_return_to_same_url(self):
+        request = HttpRequest()
+        request.META = {'SERVER_NAME': 'localserver', 'SERVER_PORT': 80}
+        request.path = '/same-url/'
+        setattr(request,'user', AnonymousUser())
+        setattr(request,'FACEBOOK', {})
+        setattr(request, 'facebook', FacebookApplication(id=1))
+        response = FacebookAppAuthMixin().dispatch(request)
+        setattr(response, 'client', self.client)
+        target = reverse(
+            'friendface.views.authorize',
+            kwargs={'application_id': 1}) + "?" + urllib.urlencode({
+            'next': 'http://localserver/same-url/'
+        })
+        self.assertEqual(response._headers['location'][1], target)
+
 
 class FacebookApplicationMatchingTestCase(TestCase):
     fixtures = ["application.json"]

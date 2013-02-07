@@ -147,6 +147,6 @@ class FacebookAppAuthMixin(object):
             if request.FACEBOOK:
                 self.auth_url = request.facebook.build_canvas_url(request.path)
             else:
-                self.auth_url = request.build_absolute_url()
+                self.auth_url = request.build_absolute_uri()
         return redirect(request.facebook.get_authorize_url(self.auth_url))
 
