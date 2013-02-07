@@ -1,5 +1,4 @@
 [
-
     {
         "pk": 1,
         "model": "friendface.facebookapplication",
@@ -7,6 +6,8 @@
             "name": "foo",
             "secret": "bar",
             "namespace": "mhe",
+            "canvas_url": "http://testserver/",
+            "secure_canvas_url": "https://testserver/",
             "link": "http://www.facebook.com/apps/application.php?id=382752368461014"
         }
     }

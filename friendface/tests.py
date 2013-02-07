@@ -26,6 +26,17 @@ class FacebookApplicationTestCase(TestCase):
         auth = app.facebookauthorization_set.get()
         self.assertEqual(next, auth.next)
 
+    def test_build_canvas_url(self):
+        app = FacebookApplication.objects.get()
+        self.assertEqual("https://apps.facebook.com/%s/" % app.namespace,
+                         app.build_canvas_url())
+
+    def test_build_non_namespace_canvas_url(self):
+        app = FacebookApplication.objects.get()
+        app.namespace = None
+        self.assertEqual("https://apps.facebook.com/%s/" % app.id,
+                         app.build_canvas_url())
+
 
 class FacebookAuthorizationMixinTestCase(TestCase):
     def test_anonymous_users_get_authenticated(self):

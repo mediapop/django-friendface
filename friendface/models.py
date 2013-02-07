@@ -249,7 +249,8 @@ class FacebookApplication(models.Model, FacebookRequestMixin):
         relative this facebook apps canvas page."""
         if not self.canvas_url: return None
         if location is None:
-            return "https://apps.facebook.com/{0}/".format(self.namespace)
+            return "https://apps.facebook.com/{0}/".format(self.namespace or
+                                                           self.id)
         canvas_path = urlparse.urlparse(self.canvas_url).path
         assert location.startswith(canvas_path), "The application path %s " \
             "doesn't is not the start of the location path so no canvas url " \
