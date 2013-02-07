@@ -129,7 +129,22 @@ class FacebookAppAuthMixin(object):
     facebook) or the page (request.FACEBOOK is not present)"""
     auth_url = ''
 
+    def get_auth_url(self, request):
+        if self.auth_url:
+            return self.auth_url
+
+        if request.FACEBOOK:
+            return request.facebook.build_canvas_url(request.path)
+        else:
+            return request.build_absolute_uri()
+
+    def redirect(self, url):
+        #@todo This could work like authorize() and cause 1 less redirect.
+        return redirect(url)
+
     def dispatch(self, request, *args, **kwargs):
+        self.request = request
+
         if request.user.is_authenticated():
             try:
                 # @todo In Django 1.5 it should be possible to reduce this to:
@@ -143,10 +158,7 @@ class FacebookAppAuthMixin(object):
                                                                   **kwargs)
             except ObjectDoesNotExist:
                 pass
-        if not self.auth_url:
-            if request.FACEBOOK:
-                self.auth_url = request.facebook.build_canvas_url(request.path)
-            else:
-                self.auth_url = request.build_absolute_uri()
-        return redirect(request.facebook.get_authorize_url(self.auth_url))
+
+        auth_url = self.get_auth_url(request)
+        return self.redirect(request.facebook.get_authorize_url(auth_url))
 
