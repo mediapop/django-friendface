@@ -129,14 +129,14 @@ class FacebookAppAuthMixin(object):
     facebook) or the page (request.FACEBOOK is not present)"""
     auth_url = ''
 
-    def get_auth_url(self, request):
+    def get_auth_url(self):
         if self.auth_url:
             return self.auth_url
 
-        if request.FACEBOOK:
-            return request.facebook.build_canvas_url(request.path)
+        if self.request.FACEBOOK:
+            return self.request.facebook.build_canvas_url(self.request.path)
         else:
-            return request.build_absolute_uri()
+            return self.request.build_absolute_uri()
 
     def redirect(self, url):
         #@todo This could work like authorize() and cause 1 less redirect.
@@ -159,6 +159,6 @@ class FacebookAppAuthMixin(object):
             except ObjectDoesNotExist:
                 pass
 
-        auth_url = self.get_auth_url(request)
+        auth_url = self.get_auth_url()
         return self.redirect(request.facebook.get_authorize_url(auth_url))
 
