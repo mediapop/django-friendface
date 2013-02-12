@@ -3,6 +3,7 @@ import random
 import urllib2
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User, SiteProfileNotAvailable
+from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.utils.baseconv import BASE62_ALPHABET
@@ -119,39 +120,46 @@ class FacebookPostAsGetMixin(object):
         else:
             return self.post(request, *args, **kwargs)
 
+
 class FacebookEnabledTemplateView(FacebookPostAsGetMixin, TemplateView):
     """ So that we can use TemplateView in urls.py even when on Facebook. """
 
 
 class FacebookAppAuthMixin(object):
+    """ This will cause authentication that will go back to the canvas (if on
+    facebook) or the page (request.FACEBOOK is not present)"""
     auth_url = ''
 
-    def auth_redirect_back(self):
-        '''
-        Define the URL the request should be redirected to after the app has
-        been authorized here.
-        '''
-        raise ValueError('An URL to redirect to after app auth expected.')
+    def get_auth_url(self):
+        if self.auth_url:
+            return self.auth_url
 
-    def _generate_auth_url(self):
-        next = self.auth_redirect_back()
-        self.auth_url = self.request.facebook.get_authorize_url(next)
+        if self.request.FACEBOOK:
+            return self.request.facebook.build_canvas_url(self.request.path)
+        else:
+            return self.request.build_absolute_uri()
 
     def redirect(self, url):
+        #@todo This could work like authorize() and cause 1 less redirect.
         return redirect(url)
 
     def dispatch(self, request, *args, **kwargs):
         self.request = request
 
-        self._generate_auth_url()
-        if not request.user.is_authenticated():
-            return self.redirect(self.auth_url)
-        ## With changes to friendface these lines shouldn't be needed since
-        ## the middleware handles logout before it goes this far.
-        else:
-            fb_user = request.user.get_profile().facebook
-            if not fb_user or fb_user.application != request.facebook:
-                return self.redirect(self.auth_url)
+        if request.user.is_authenticated():
+            try:
+                # @todo In Django 1.5 it should be possible to reduce this to:
+                # request.user.facebook.application == request.facebook
+                facebook_user = request.user.get_profile().facebook
+                if request.facebook != facebook_user.application:
+                    raise ObjectDoesNotExist # @todo Pick a better exception?
 
-        return super(FacebookAppAuthMixin, self).dispatch(request, *args,
-                                                          **kwargs)
+                return super(FacebookAppAuthMixin, self).dispatch(request,
+                                                                  *args,
+                                                                  **kwargs)
+            except ObjectDoesNotExist:
+                pass
+
+        auth_url = self.get_auth_url()
+        return self.redirect(request.facebook.get_authorize_url(auth_url))
+
