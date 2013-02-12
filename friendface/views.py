@@ -4,6 +4,7 @@ import urllib2
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User, SiteProfileNotAvailable
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.utils.baseconv import BASE62_ALPHABET
@@ -163,3 +164,40 @@ class FacebookAppAuthMixin(object):
         auth_url = self.get_auth_url()
         return self.redirect(request.facebook.get_authorize_url(auth_url))
 
+
+class LikeGateMixin(object):
+    # @todo If we have concept of a canonical page, that could be the default
+    # @todo If we have permissions escalation we could request user_likes on
+    # failing to detect a like.
+    # @todo Should cache likes.
+    # @todo Allow for multiple targets.
+    like_gate_template = None
+    like_gate_target = None
+
+    def get_like_gate_template(self):
+        if not self.like_gate_template:
+            raise ImproperlyConfigured(
+                "LikeGateMixin requires get_fan_gate_template to return a "
+                "template by being overridden or having like_gate_template set")
+        return self.like_gate_template
+
+    def get_like_gate_target(self):
+        return self.like_gate_target
+
+    def dispatch(self, request, *args, **kwargs):
+        page = request.FACEBOOK.get('page', {})
+        like_gate_target = self.get_like_gate_target()
+        if page and not page['liked'] and (not like_gate_target or
+                     int(page['id']) == like_gate_target):
+            return render(request, self.get_like_gate_template())
+        elif like_gate_target and int(page.get('id', 0)) != like_gate_target:
+            try: #@todo Drop get_profile() for 1.5
+                facebook_user = request.user.get_profile().facebook
+                if facebook_user is None: raise ObjectDoesNotExist
+            except ObjectDoesNotExist:
+                raise ImproperlyConfigured("LikeGate with target must come "
+                                           "after facebook auth.")
+            if not facebook_user.has_liked(self.get_like_gate_target()):
+                return render(request, self.get_like_gate_template())
+
+        return super(LikeGateMixin, self).dispatch(request, *args, **kwargs)
