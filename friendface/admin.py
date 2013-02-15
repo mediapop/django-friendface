@@ -64,7 +64,7 @@ class FacebookApplicationAdmin(admin.ModelAdmin):
                        'website_url')
 
     def has_privacy_policy(self, obj):
-        return obj.privacy_policy_url is None
+        return not obj.privacy_policy_url is None
     has_privacy_policy.boolean = True
 
     def url(self, obj):
