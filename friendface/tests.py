@@ -1,5 +1,6 @@
 # -*- encoding: utf-8 -*-
 from django.contrib.auth.models import User
+from django.views.generic import View
 from facebook import GraphAPI
 import os
 from mock import patch
@@ -10,7 +11,7 @@ from friendface.models import FacebookApplication, FacebookAuthorization, \
 import urllib
 from django.contrib.auth.models import AnonymousUser
 from django.core.urlresolvers import reverse
-from friendface.views import FacebookAppAuthMixin
+from friendface.views import FacebookAppAuthMixin, FacebookPostAsGetMixin
 
 TEST_USER = {
     'id': 12345678,
@@ -88,6 +89,43 @@ class FacebookApplicationTestCase(TestCase):
         app.namespace = None
         self.assertEqual("https://apps.facebook.com/%s/" % app.id,
                          app.build_canvas_url())
+
+
+class FacebookPostAsGetMixinTestCase(TestCase):
+    fixtures = ["friendface/application.json"]
+
+    def setUp(self):
+        self.request = HttpRequest()
+        self.request.method = 'post'
+        self.request.META = {'SERVER_NAME': 'localserver', 'SERVER_PORT': 80}
+        self.request.path = '/same-url/'
+        setattr(self.request,'FACEBOOK', {'true': 'value'})
+        setattr(self.request, 'facebook', FacebookApplication.objects.get())
+        self.base_url = reverse(
+            'friendface.views.authorize',
+            kwargs={'application_id': self.request.facebook.id})
+
+    def test_regular_post(self):
+        setattr(self.request,'FACEBOOK', {})
+
+        class TestView(FacebookPostAsGetMixin, View):
+            def get(self, request, *args, **kwargs):
+                return False
+
+            def post(self, request, *args, **kwargs):
+                return True
+
+        self.assertTrue(TestView().dispatch(self.request))
+
+    def test_facebook_request(self):
+        class TestView(FacebookPostAsGetMixin, View):
+            def get(self, request, *args, **kwargs):
+                return True
+
+            def post(self, request, *args, **kwargs):
+                return False
+
+        self.assertTrue(TestView().dispatch(self.request))
 
 
 class FacebookAuthorizationMixinTestCase(TestCase):

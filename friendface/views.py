@@ -107,19 +107,22 @@ def record_facebook_invitation(request):
             receiver=recipient,
             request_id=request_id,
             application=application,
-            sender=profile.facebook
-        )
+            sender=profile.facebook)
 
     return HttpResponse(json.dumps({'result': 'ok'}))
 
 
 class FacebookPostAsGetMixin(object):
     """ Treat facebook requests with a decoded signed_request as GET. """
-    def post(self, request, *args, **kwargs):
+    def dispatch(self, request, *args, **kwargs):
         if request.FACEBOOK:
-            return self.get(request, *args, **kwargs)
-        else:
-            return self.post(request, *args, **kwargs)
+            if not hasattr(self, 'get'):
+                raise ImproperlyConfigured("FacebookPostAsGetMixin needs a "
+                                           "get method to dispatch to")
+            setattr(self, 'post', self.get)
+
+        return super(FacebookPostAsGetMixin, self).dispatch(
+            request, *args, **kwargs)
 
 
 class FacebookEnabledTemplateView(FacebookPostAsGetMixin, TemplateView):
