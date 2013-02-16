@@ -63,6 +63,17 @@ class FacebookApplicationAdmin(admin.ModelAdmin):
                        'user_support_url',
                        'website_url')
 
+    def get_readonly_fields(self, request, obj=None):
+        readonly_fields = super(FacebookApplicationAdmin, self)\
+            .get_readonly_fields(request, obj)
+
+        if not obj is None:
+            change_readonly_fields = ['id']
+            change_readonly_fields.extend(readonly_fields)
+            return change_readonly_fields
+
+        return readonly_fields
+
     def has_privacy_policy(self, obj):
         return not obj.privacy_policy_url is None
     has_privacy_policy.boolean = True
