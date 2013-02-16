@@ -190,9 +190,7 @@ class FacebookApplication(models.Model, FacebookRequestMixin):
     iphone_app_store_id = models.IntegerField(blank=True, null=True)
     hosting_url = models.URLField(blank=True, null=True)
     mobile_web_url = models.URLField(blank=True, null=True)
-    page_tab_default_name = models.CharField(max_length=32,
-                                             blank=True,
-                                             null=True)
+    page_tab_default_name = models.TextField(blank=True, null=True)
 
     page_tab_url = models.URLField(blank=True, null=True)
     privacy_policy_url = models.URLField(blank=True, null=True)
