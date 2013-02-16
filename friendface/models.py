@@ -1,9 +1,7 @@
 import urllib
 import urllib2
 import urlparse
-from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
-from django.core.validators import URLValidator
 from django.db import models
 from django.template.defaultfilters import slugify
 from facebook import parse_signed_request
