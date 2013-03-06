@@ -47,7 +47,7 @@ class FacebookUser(models.Model, FacebookRequestMixin):
     class Meta:
         unique_together = ('uid', 'application')
 
-    def photo_url(self):
+    def get_picture_url(self):
         return "https://graph.facebook.com/{0}/picture".format(self.uid)
 
     def has_liked(self, target):
