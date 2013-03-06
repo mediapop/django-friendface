@@ -13,6 +13,93 @@ from django.views.generic import TemplateView
 from friendface.shortcuts import redirectjs
 from friendface.models import (FacebookApplication, FacebookAuthorization,
                                FacebookUser, FacebookInvitation)
+from django.views.generic import View
+
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+class Authorized(View):
+    #TODO make lots of tests for this...
+    authorization_id = None
+
+    def get(self, request, authorization_id, *args, **kwargs):
+        self.auth = FacebookAuthorization.objects.get(id=authorization_id)
+        if request.GET.get('error'):
+            # @todo Handle user not wanting to auth.
+            logger.info("error - user might have refused to auth")
+            return redirect(self.auth.get_absolute_url())
+        code = request.GET.get('code')
+        try:
+            self.access_token = self.get_access_token(code)
+        except urllib2.HTTPError as e:
+            logger.error("Cannot get access token", extra={'HTTPError':e})
+            return redirect(self.auth.get_facebook_authorize_url())
+        self.facebook_user = self.get_facebook_user()
+        self.user = self.get_user()
+        if not self.authenticated_user is None:
+            if self.authenticated_user.is_active:
+                login(request, self.authenticated_user)
+        return redirectjs(self.auth.next)
+
+    def get_access_token(self, code):
+        """
+        Get the access token
+        :param code: the code passed
+        :returns: access_token
+        :raises: :py:exc:`urllib2.HTTPError`
+        """
+        return self.auth.get_access_token(self.code)
+
+    def get_facebook_user(self):
+        """
+        Gets or creates a FacebookUser using the data from the GraphAPI
+        :returns: :py:class:`FacebookUser`
+        """
+        request_data = GraphAPI(self.access_token).get_object('me')
+        facebook_user, created = FacebookUser.objects.get_or_create(
+            uid=request_data['id'],
+            application=self.auth.application)
+        facebook_user.access_token = self.access_token
+        facebook_user.first_name = request_data['first_name']
+        facebook_user.last_name = request_data['last_name']
+        facebook_user.locale = request_data.get('locale')
+        facebook_user.timezone = request_data.get('timezone')
+        facebook_user.religion = request_data.get('religion')
+        facebook_user.location = request_data.get('location', {}).get('name')
+        facebook_user.gender = request_data.get('gender')
+        facebook_user.email = request_data.get('email')
+        facebook_user.save()
+        return facebook_user
+
+    def get_user(self):
+        """
+        sets `self.authenticated_user` if possible.  If a user doesn't exist,
+        create it.  if it is created, but there is no app, then delete the user
+        self.authenticated_user = authenticate(facebook_user=self.facebook_user)
+        :returns: :py:class:`User`
+        """
+        if self.authenticated_user is None:
+            # @todo import the profile and check if it has a foreignkey to
+            # FacebookUser
+            # Also, what needs to change for django 1.5?
+            username = "".join(random.choice(BASE62_ALPHABET) for i in xrange(30))
+            user = User.objects.create_user(username=username)
+            user.first_name = self.facebook_user.first_name
+            user.last_name = self.facebook_user.last_name
+            user.email = self.facebook_user.email
+            user.set_unusable_password()
+
+            try:
+                profile = user.get_profile()
+                profile.facebook = self.facebook_user
+                profile.save()
+                self.authenticated_user = authenticate(facebook_user=self.facebook_user)
+            except SiteProfileNotAvailable:
+                user.delete()
+                return None
+        return user
 
 
 def authorized(request, authorization_id):
