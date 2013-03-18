@@ -1,12 +1,21 @@
+import datetime
+import logging
 import urllib
 import urllib2
 import urlparse
+
 from django.core.urlresolvers import reverse
 from django.db import models
 from django.template.defaultfilters import slugify
+from django.utils import timezone
+
 from facebook import parse_signed_request
 import facebook
 import requests
+
+from model_utils.fields import MonitorField
+
+logger = logging.getLogger('friendface')
 
 
 class FacebookRequestMixin(object):
@@ -20,7 +29,25 @@ class FacebookRequestMixin(object):
         return response.json
 
 
-class FacebookUser(models.Model, FacebookRequestMixin):
+class AccessTokenStillValidMixin(models.Model):
+    access_token_updated_at = MonitorField(
+        monitor='access_token',
+        null=True,
+        blank=True
+    )
+
+    class Meta:
+        abstract = True
+
+    @property
+    def access_token_valid(self):
+        return (
+            self.access_token_updated_at + datetime.timedelta(days=90)
+        ) > timezone.now()
+
+
+class FacebookUser(AccessTokenStillValidMixin, models.Model,
+                   FacebookRequestMixin):
     created = models.DateTimeField(auto_now_add=True)
     uid = models.BigIntegerField()
     application = models.ForeignKey('FacebookApplication')
@@ -432,3 +459,69 @@ class FacebookPage(models.Model):
 
     def __unicode__(self):
         return self.name
+
+
+class PageAdmin(AccessTokenStillValidMixin, models.Model,
+                FacebookRequestMixin):
+    user = models.ForeignKey(FacebookUser, related_name='+')
+    page = models.ForeignKey(FacebookPage, related_name='+')
+
+    access_token = models.CharField(max_length=128, null=True, blank=True)
+
+    updated_at = models.DateTimeField()
+
+    def save(self, *args, **kwargs):
+        self.updated_at = timezone.now()
+
+        return super(PageAdmin, self).save(*args, **kwargs)
+
+    @classmethod
+    def create_for_user(cls, user):
+        '''
+        Given a FacebookUser instance with manage_pages permissions this will
+        query Facebook for all pages this user has access to.
+
+        FacebookPage instances will be created if needed and access_tokens will
+        be updated if it has changed.
+
+        Also all pages in the database that has not been queried will be
+        deleted.
+        '''
+        pages = user.request(path='/me/accounts')
+        if not 'data' in pages:
+            return False
+
+        page_ids = []
+
+        for page in pages['data']:
+            try:
+                fb_page, new = FacebookPage.objects.get_or_create(
+                    id=page['id']
+                )
+            except facebook.GraphAPIError as e:
+                logger.error(
+                    'Error creating FacebookPage "{0}" - {1}: '.format(
+                        page['id'], e.message
+                    ), extra={
+                        'Graph API error': e
+                    }
+                )
+            else:
+                page_ids.append(page['id'])
+                obj, new = cls.objects.get_or_create(
+                    user=user,
+                    page=fb_page,
+                    defaults={
+                        'access_token': page['access_token']
+                    })
+
+                if not new and obj.access_token != page['access_token']:
+                    obj.access_token = page['access_token']
+                    obj.save()
+
+            if len(page_ids) > 0:
+                (cls.objects.filter(user=user)
+                 .exclude(page_id__in=page_ids)
+                 .delete())
+
+        return True
