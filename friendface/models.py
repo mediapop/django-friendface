@@ -71,6 +71,11 @@ class FacebookUser(AccessTokenStillValidMixin, models.Model,
                                     editable=False,
                                     help_text="These are valid for 90 days.")
 
+    pages = models.ManyToManyField(
+        'FacebookPage', through='PageAdmin',
+        help_text='The pages this user is admin for'
+    )
+
     class Meta:
         unique_together = ('uid', 'application')
 
@@ -443,6 +448,10 @@ class FacebookPage(models.Model):
         null=True)
     is_published = models.NullBooleanField(blank=True,
                                            null=True)
+    users = models.ManyToManyField(
+        FacebookUser, through='PageAdmin',
+        help_text='The Facebook Users that are admins for this page'
+    )
 
     def save(self, *args, **kwargs):
         graph = facebook.GraphAPI()
