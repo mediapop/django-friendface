@@ -115,6 +115,19 @@ class FacebookUser(AccessTokenStillValidMixin, models.Model,
 
         return r.json
 
+    def get_long_lived_access_token(self):
+        '''
+        format of response: access_token=<token>&timestamp=<timestamp>
+        Only it doesn't give the timestamp every time.
+        '''
+        app = self.application
+        return self.request('/oauth/access_token', args=dict(
+            client_id=app.id,
+            client_secret=app.secret,
+            grant_type='fb_exchange_token',
+            fb_exchange_token=self.access_token
+        )).split('&')[0].replace('access_token=', '')
+
     def __unicode__(self):
         return self.full_name()
 
