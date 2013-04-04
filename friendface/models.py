@@ -29,7 +29,11 @@ class FacebookRequestMixin(object):
         return response.json
 
 
-class AccessTokenStillValidMixin(models.Model):
+class AccessTokenMixin(models.Model):
+    access_token = models.CharField(max_length=128,
+                                    null=True,
+                                    editable=False,
+                                    help_text="These are valid for 90 days.")
     access_token_updated_at = MonitorField(
         monitor='access_token',
         null=True,
@@ -46,8 +50,7 @@ class AccessTokenStillValidMixin(models.Model):
         ) > timezone.now()
 
 
-class FacebookUser(AccessTokenStillValidMixin, models.Model,
-                   FacebookRequestMixin):
+class FacebookUser(AccessTokenMixin, models.Model, FacebookRequestMixin):
     created = models.DateTimeField(auto_now_add=True)
     uid = models.BigIntegerField()
     application = models.ForeignKey('FacebookApplication')
@@ -63,13 +66,7 @@ class FacebookUser(AccessTokenStillValidMixin, models.Model,
 
     email = models.EmailField(blank=True,
                               null=True)
-
     gender = models.CharField(max_length=8, null=True, blank=True)
-
-    access_token = models.CharField(max_length=128,
-                                    null=True,
-                                    editable=False,
-                                    help_text="These are valid for 90 days.")
 
     pages = models.ManyToManyField(
         'FacebookPage', through='PageAdmin',
@@ -172,7 +169,7 @@ class FacebookAuthorization(models.Model):
         return "{0}?{1}".format(facebook_url, query)
 
 
-class FacebookApplication(models.Model, FacebookRequestMixin):
+class FacebookApplication(AccessTokenMixin, models.Model, FacebookRequestMixin):
     id = models.BigIntegerField(primary_key=True)
     name = models.CharField(max_length=32,
                             null=True,
@@ -188,9 +185,6 @@ class FacebookApplication(models.Model, FacebookRequestMixin):
         here by clicking the application icon, or via invites etc.""",
         blank=True,
         null=True)
-    access_token = models.CharField(max_length=128,
-                                    null=True,
-                                    blank=True)
     namespace = models.CharField(max_length=20,
                                  blank=True,
                                  null=True)
@@ -483,12 +477,9 @@ class FacebookPage(models.Model):
         return self.name
 
 
-class PageAdmin(AccessTokenStillValidMixin, models.Model,
-                FacebookRequestMixin):
+class PageAdmin(AccessTokenMixin, models.Model, FacebookRequestMixin):
     user = models.ForeignKey(FacebookUser, related_name='+')
     page = models.ForeignKey(FacebookPage, related_name='+')
-
-    access_token = models.CharField(max_length=128, null=True, blank=True)
 
     updated_at = models.DateTimeField()
 
