@@ -508,7 +508,7 @@ class PageAdmin(AccessTokenMixin, models.Model, FacebookRequestMixin):
 
         for page in pages['data']:
             try:
-                fb_page, new = FacebookPage.objects.get_or_create(
+                fb_page, _ = FacebookPage.objects.get_or_create(
                     id=page['id']
                 )
             except facebook.GraphAPIError as e:
@@ -516,20 +516,19 @@ class PageAdmin(AccessTokenMixin, models.Model, FacebookRequestMixin):
                              page['id'], e.message, extra={'stack': True})
             else:
                 page_ids.append(page['id'])
-                obj, new = cls.objects.get_or_create(
+                obj, created = cls.objects.get_or_create(
                     user=user,
                     page=fb_page,
                     defaults={
                         'access_token': page['access_token']
                     })
 
-                if not new and obj.access_token != page['access_token']:
+                if not created and obj.access_token != page['access_token']:
                     obj.access_token = page['access_token']
                     obj.save()
 
-            if len(page_ids) > 0:
-                (cls.objects.filter(user=user)
-                 .exclude(page_id__in=page_ids)
-                 .delete())
+        # Remove all pages that we explicitly didn't iterate over, since the
+        # user lost access to them.
+        cls.objects.filter(user=user).exclude(page_id__in=page_ids).delete()
 
         return True
