@@ -481,7 +481,7 @@ class PageAdmin(AccessTokenMixin, models.Model, FacebookRequestMixin):
     user = models.ForeignKey(FacebookUser, related_name='+')
     page = models.ForeignKey(FacebookPage, related_name='+')
 
-    updated_at = models.DateTimeField(, auto_now=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     @classmethod
     def create_for_user(cls, user):
