@@ -150,12 +150,13 @@ class FacebookAppAuthMixin(object):
     def dispatch(self, request, *args, **kwargs):
         self.request = request
 
-        if request.user.is_authenticated():
+        if request.user.is_authenticated() and request.facebook:
             try:
                 # @todo In Django 1.5 it should be possible to reduce this to:
                 # request.user.facebook.application == request.facebook
                 facebook_user = request.user.get_profile().facebook
-                if request.facebook != facebook_user.application:
+                if(not facebook_user
+                   or request.facebook != facebook_user.application):
                     raise ObjectDoesNotExist # @todo Pick a better exception?
 
                 return super(FacebookAppAuthMixin, self).dispatch(request,
