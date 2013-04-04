@@ -512,13 +512,8 @@ class PageAdmin(AccessTokenMixin, models.Model, FacebookRequestMixin):
                     id=page['id']
                 )
             except facebook.GraphAPIError as e:
-                logger.error(
-                    'Error creating FacebookPage "{0}" - {1}: '.format(
-                        page['id'], e.message
-                    ), extra={
-                        'Graph API error': e
-                    }
-                )
+                logger.error('Error creating FacebookPage "%s" - %s: ',
+                             page['id'], e.message, extra={'stack': True})
             else:
                 page_ids.append(page['id'])
                 obj, new = cls.objects.get_or_create(
