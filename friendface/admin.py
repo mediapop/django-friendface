@@ -62,6 +62,7 @@ class FacebookApplicationAdmin(admin.ModelAdmin):
                        'user_support_email',
                        'user_support_url',
                        'website_url')
+    exclude = ('access_token_updated_at',)
 
     def get_readonly_fields(self, request, obj=None):
         readonly_fields = super(FacebookApplicationAdmin, self)\
@@ -92,6 +93,7 @@ class FacebookUserAdmin(admin.ModelAdmin):
     list_filter = ('gender', 'application')
     date_hierarchy = 'created'
     search_fields = ('first_name', 'last_name', 'email', 'uid')
+    exclude = ('access_token_updated_at',)
     list_display = ('__unicode__',
                     'uid',
                     'first_name',

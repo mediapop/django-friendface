@@ -15,7 +15,7 @@ class Migration(SchemaMigration):
             ('access_token_updated_at', self.gf('model_utils.fields.MonitorField')(default=datetime.datetime.now, null=True, monitor='access_token', blank=True)),
             ('user', self.gf('django.db.models.fields.related.ForeignKey')(related_name='+', to=orm['friendface.FacebookUser'])),
             ('page', self.gf('django.db.models.fields.related.ForeignKey')(related_name='+', to=orm['friendface.FacebookPage'])),
-            ('updated_at', self.gf('django.db.models.fields.DateTimeField')()),
+            ('updated_at', self.gf('django.db.models.fields.DateTimeField')(auto_now=True, blank=True)),
         ))
         db.send_create_signal('friendface', ['PageAdmin'])
 
@@ -148,7 +148,7 @@ class Migration(SchemaMigration):
             'access_token_updated_at': ('model_utils.fields.MonitorField', [], {'default': 'datetime.datetime.now', 'null': 'True', 'monitor': "'access_token'", 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'page': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'+'", 'to': "orm['friendface.FacebookPage']"}),
-            'updated_at': ('django.db.models.fields.DateTimeField', [], {}),
+            'updated_at': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'+'", 'to': "orm['friendface.FacebookUser']"})
         }
     }

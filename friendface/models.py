@@ -323,7 +323,8 @@ class FacebookApplication(AccessTokenMixin, models.Model, FacebookRequestMixin):
         self.access_token = self.get_access_token()
         graph = facebook.GraphAPI(access_token=self.get_access_token())
         # @todo This should be a whitelist rather than a blacklist.
-        exclude_fields = ('secret', 'default_scope', 'access_token', 'id')
+        exclude_fields = ('secret', 'default_scope', 'access_token', 'id',
+                          'access_token_updated_at')
         fields = ",".join(field.name
                           for field in FacebookApplication._meta.fields
                           if field.name not in exclude_fields)
