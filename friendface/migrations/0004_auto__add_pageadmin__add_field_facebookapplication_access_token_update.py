@@ -11,13 +11,18 @@ class Migration(SchemaMigration):
         # Adding model 'PageAdmin'
         db.create_table('friendface_pageadmin', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('access_token', self.gf('django.db.models.fields.CharField')(max_length=128, null=True)),
             ('access_token_updated_at', self.gf('model_utils.fields.MonitorField')(default=datetime.datetime.now, null=True, monitor='access_token', blank=True)),
             ('user', self.gf('django.db.models.fields.related.ForeignKey')(related_name='+', to=orm['friendface.FacebookUser'])),
             ('page', self.gf('django.db.models.fields.related.ForeignKey')(related_name='+', to=orm['friendface.FacebookPage'])),
-            ('access_token', self.gf('django.db.models.fields.CharField')(max_length=128, null=True, blank=True)),
             ('updated_at', self.gf('django.db.models.fields.DateTimeField')()),
         ))
         db.send_create_signal('friendface', ['PageAdmin'])
+
+        # Adding field 'FacebookApplication.access_token_updated_at'
+        db.add_column('friendface_facebookapplication', 'access_token_updated_at',
+                      self.gf('model_utils.fields.MonitorField')(default=datetime.datetime.now, null=True, monitor='access_token', blank=True),
+                      keep_default=False)
 
         # Adding field 'FacebookUser.access_token_updated_at'
         db.add_column('friendface_facebookuser', 'access_token_updated_at',
@@ -29,6 +34,9 @@ class Migration(SchemaMigration):
         # Deleting model 'PageAdmin'
         db.delete_table('friendface_pageadmin')
 
+        # Deleting field 'FacebookApplication.access_token_updated_at'
+        db.delete_column('friendface_facebookapplication', 'access_token_updated_at')
+
         # Deleting field 'FacebookUser.access_token_updated_at'
         db.delete_column('friendface_facebookuser', 'access_token_updated_at')
 
@@ -36,7 +44,8 @@ class Migration(SchemaMigration):
     models = {
         'friendface.facebookapplication': {
             'Meta': {'object_name': 'FacebookApplication'},
-            'access_token': ('django.db.models.fields.CharField', [], {'max_length': '128', 'null': 'True', 'blank': 'True'}),
+            'access_token': ('django.db.models.fields.CharField', [], {'max_length': '128', 'null': 'True'}),
+            'access_token_updated_at': ('model_utils.fields.MonitorField', [], {'default': 'datetime.datetime.now', 'null': 'True', 'monitor': "'access_token'", 'blank': 'True'}),
             'auth_dialog_data_help_url': ('django.db.models.fields.URLField', [], {'max_length': '200', 'null': 'True', 'blank': 'True'}),
             'auth_dialog_headline': ('django.db.models.fields.CharField', [], {'max_length': '32', 'null': 'True', 'blank': 'True'}),
             'auth_dialog_perms_explanation': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
@@ -106,7 +115,8 @@ class Migration(SchemaMigration):
             'link': ('django.db.models.fields.URLField', [], {'max_length': '200', 'null': 'True', 'blank': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '100', 'null': 'True', 'blank': 'True'}),
             'name_space': ('django.db.models.fields.CharField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
-            'talking_about_count': ('django.db.models.fields.BigIntegerField', [], {'null': 'True', 'blank': 'True'})
+            'talking_about_count': ('django.db.models.fields.BigIntegerField', [], {'null': 'True', 'blank': 'True'}),
+            'users': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['friendface.FacebookUser']", 'through': "orm['friendface.PageAdmin']", 'symmetrical': 'False'})
         },
         'friendface.facebooktab': {
             'Meta': {'object_name': 'FacebookTab'},
@@ -127,13 +137,14 @@ class Migration(SchemaMigration):
             'last_name': ('django.db.models.fields.CharField', [], {'max_length': '100', 'null': 'True', 'blank': 'True'}),
             'locale': ('django.db.models.fields.CharField', [], {'max_length': '8', 'null': 'True', 'blank': 'True'}),
             'location': ('django.db.models.fields.CharField', [], {'max_length': '100', 'null': 'True', 'blank': 'True'}),
+            'pages': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['friendface.FacebookPage']", 'through': "orm['friendface.PageAdmin']", 'symmetrical': 'False'}),
             'religion': ('django.db.models.fields.CharField', [], {'max_length': '100', 'null': 'True', 'blank': 'True'}),
             'timezone': ('django.db.models.fields.IntegerField', [], {'max_length': '100', 'null': 'True', 'blank': 'True'}),
             'uid': ('django.db.models.fields.BigIntegerField', [], {})
         },
         'friendface.pageadmin': {
             'Meta': {'object_name': 'PageAdmin'},
-            'access_token': ('django.db.models.fields.CharField', [], {'max_length': '128', 'null': 'True', 'blank': 'True'}),
+            'access_token': ('django.db.models.fields.CharField', [], {'max_length': '128', 'null': 'True'}),
             'access_token_updated_at': ('model_utils.fields.MonitorField', [], {'default': 'datetime.datetime.now', 'null': 'True', 'monitor': "'access_token'", 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'page': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'+'", 'to': "orm['friendface.FacebookPage']"}),
