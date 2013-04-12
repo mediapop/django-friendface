@@ -1,12 +1,21 @@
+import datetime
+import logging
 import urllib
 import urllib2
 import urlparse
+
 from django.core.urlresolvers import reverse
 from django.db import models
 from django.template.defaultfilters import slugify
+from django.utils import timezone
+
 from facebook import parse_signed_request
 import facebook
 import requests
+
+from model_utils.fields import MonitorField
+
+logger = logging.getLogger('friendface')
 
 
 class FacebookRequestMixin(object):
@@ -20,7 +29,28 @@ class FacebookRequestMixin(object):
         return response.json
 
 
-class FacebookUser(models.Model, FacebookRequestMixin):
+class AccessTokenMixin(models.Model):
+    access_token = models.CharField(max_length=128,
+                                    null=True,
+                                    editable=False,
+                                    help_text="These are valid for 90 days.")
+    access_token_updated_at = MonitorField(
+        monitor='access_token',
+        null=True,
+        blank=True
+    )
+
+    class Meta:
+        abstract = True
+
+    @property
+    def access_token_valid(self):
+        return (
+            self.access_token_updated_at + datetime.timedelta(days=90)
+        ) > timezone.now()
+
+
+class FacebookUser(AccessTokenMixin, models.Model, FacebookRequestMixin):
     created = models.DateTimeField(auto_now_add=True)
     uid = models.BigIntegerField()
     application = models.ForeignKey('FacebookApplication')
@@ -36,13 +66,12 @@ class FacebookUser(models.Model, FacebookRequestMixin):
 
     email = models.EmailField(blank=True,
                               null=True)
-
     gender = models.CharField(max_length=8, null=True, blank=True)
 
-    access_token = models.CharField(max_length=128,
-                                    null=True,
-                                    editable=False,
-                                    help_text="These are valid for 90 days.")
+    pages = models.ManyToManyField(
+        'FacebookPage', through='PageAdmin',
+        help_text='The pages this user is admin for'
+    )
 
     class Meta:
         unique_together = ('uid', 'application')
@@ -82,6 +111,19 @@ class FacebookUser(models.Model, FacebookRequestMixin):
             })
 
         return r.json
+
+    def get_long_lived_access_token(self):
+        '''
+        format of response: access_token=<token>&timestamp=<timestamp>
+        Only it doesn't give the timestamp every time.
+        '''
+        app = self.application
+        return self.request('/oauth/access_token', args=dict(
+            client_id=app.id,
+            client_secret=app.secret,
+            grant_type='fb_exchange_token',
+            fb_exchange_token=self.access_token
+        )).split('&')[0].replace('access_token=', '')
 
     def __unicode__(self):
         return self.full_name()
@@ -127,7 +169,7 @@ class FacebookAuthorization(models.Model):
         return "{0}?{1}".format(facebook_url, query)
 
 
-class FacebookApplication(models.Model, FacebookRequestMixin):
+class FacebookApplication(AccessTokenMixin, models.Model, FacebookRequestMixin):
     id = models.BigIntegerField(primary_key=True)
     name = models.CharField(max_length=32,
                             null=True,
@@ -143,9 +185,6 @@ class FacebookApplication(models.Model, FacebookRequestMixin):
         here by clicking the application icon, or via invites etc.""",
         blank=True,
         null=True)
-    access_token = models.CharField(max_length=128,
-                                    null=True,
-                                    blank=True)
     namespace = models.CharField(max_length=20,
                                  blank=True,
                                  null=True)
@@ -284,7 +323,8 @@ class FacebookApplication(models.Model, FacebookRequestMixin):
         self.access_token = self.get_access_token()
         graph = facebook.GraphAPI(access_token=self.get_access_token())
         # @todo This should be a whitelist rather than a blacklist.
-        exclude_fields = ('secret', 'default_scope', 'access_token', 'id')
+        exclude_fields = ('secret', 'default_scope', 'access_token', 'id',
+                          'access_token_updated_at')
         fields = ",".join(field.name
                           for field in FacebookApplication._meta.fields
                           if field.name not in exclude_fields)
@@ -416,6 +456,10 @@ class FacebookPage(models.Model):
         null=True)
     is_published = models.NullBooleanField(blank=True,
                                            null=True)
+    users = models.ManyToManyField(
+        FacebookUser, through='PageAdmin',
+        help_text='The Facebook Users that are admins for this page'
+    )
 
     def save(self, *args, **kwargs):
         graph = facebook.GraphAPI()
@@ -432,3 +476,55 @@ class FacebookPage(models.Model):
 
     def __unicode__(self):
         return self.name
+
+
+class PageAdmin(AccessTokenMixin, models.Model, FacebookRequestMixin):
+    user = models.ForeignKey(FacebookUser, related_name='+')
+    page = models.ForeignKey(FacebookPage, related_name='+')
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    @classmethod
+    def create_for_user(cls, user):
+        '''
+        Given a FacebookUser instance with manage_pages permissions this will
+        query Facebook for all pages this user has access to.
+
+        FacebookPage instances will be created if needed and access_tokens will
+        be updated if it has changed.
+
+        Also all pages in the database that has not been queried will be
+        deleted.
+        '''
+        pages = user.request(path='/me/accounts')
+        if not 'data' in pages:
+            return False
+
+        page_ids = []
+
+        for page in pages['data']:
+            try:
+                fb_page, _ = FacebookPage.objects.get_or_create(
+                    id=page['id']
+                )
+            except facebook.GraphAPIError as e:
+                logger.error('Error creating FacebookPage "%s" - %s: ',
+                             page['id'], e.message, extra={'stack': True})
+            else:
+                page_ids.append(page['id'])
+                obj, created = cls.objects.get_or_create(
+                    user=user,
+                    page=fb_page,
+                    defaults={
+                        'access_token': page['access_token']
+                    })
+
+                if not created and obj.access_token != page['access_token']:
+                    obj.access_token = page['access_token']
+                    obj.save()
+
+        # Remove all pages that we explicitly didn't iterate over, since the
+        # user lost access to them.
+        cls.objects.filter(user=user).exclude(page_id__in=page_ids).delete()
+
+        return True

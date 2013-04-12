@@ -25,6 +25,7 @@ setup(
         #'facebook-sdk==0.3.0',
         'requests==0.14.0',
         'mock==1.0.1',
+        'django-model-utils==1.1.0',
     ],
     dependency_links = [
         #'git+git://github.com/Celc/facebook-sdk.git#egg=facebook-sdk',
