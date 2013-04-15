@@ -319,7 +319,7 @@ class FacebookApplication(AccessTokenMixin, models.Model, FacebookRequestMixin):
 
         return urlparse.parse_qs(response.text).get('access_token')[0]
 
-    def save(self, *args, **kwargs):
+    def _pre_save(self):
         self.access_token = self.get_access_token()
         graph = facebook.GraphAPI(access_token=self.get_access_token())
         # @todo This should be a whitelist rather than a blacklist.
@@ -335,6 +335,9 @@ class FacebookApplication(AccessTokenMixin, models.Model, FacebookRequestMixin):
 
         for key, value in app_data.items():
             setattr(self, key, value)
+
+    def save(self, *args, **kwargs):
+        self._pre_save()
         super(FacebookApplication, self).save(*args, **kwargs)
 
     def scrape(self, obj):
