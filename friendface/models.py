@@ -30,8 +30,7 @@ class FacebookRequestMixin(object):
 
 
 class AccessTokenMixin(models.Model):
-    access_token = models.CharField(max_length=128,
-                                    null=True,
+    access_token = models.TextField(null=True,
                                     editable=False,
                                     help_text="These are valid for 90 days.")
     access_token_updated_at = MonitorField(
