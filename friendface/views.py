@@ -7,6 +7,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
+from django.utils import timezone
 from django.utils.baseconv import BASE62_ALPHABET
 from facebook import GraphAPI
 from django.views.generic import TemplateView
@@ -168,6 +169,55 @@ class FacebookAppAuthMixin(object):
 
         auth_url = self.get_auth_url()
         return self.redirect(request.facebook.get_authorize_url(auth_url))
+
+
+class FacebookInvitationMixin(object):
+    """ Handle Facebook Invitations directed towards the root canvas URL. """
+    # @todo Deleting the invitation objects could be pushed to celery.
+    # @todo It can currently only delete similar invitation objects. If a user
+    # has multiple invitation leading to different places, it would need to be
+    # dealt with individually.
+
+    def dispatch(self, request, *args, **kwargs):
+        request_ids = request.GET.get('request_ids')
+        if not request_ids:
+            return super(FacebookInvitationMixin, self).dispatch(request,
+                                                                 *args,
+                                                                 **kwargs)
+
+        # Make sure the user is logged in, so we can read facebook invitation
+        # details.
+        if not request.user.is_authenticated() or \
+                not request.user.get_profile().facebook:
+            return super(FacebookInvitationMixin, self).dispatch(request,
+                                                                 *args,
+                                                                 **kwargs)
+
+        facebook_user = request.user.get_profile().facebook
+
+        next_url = None
+
+        for request_id in request_ids.split(','):
+            try:
+                invitation = FacebookInvitation.objects.get(
+                    request_id=request_id,
+                    receiver=facebook_user)
+                invitation.accepted = timezone.now()
+                invitation.save()
+                if invitation.next is None or next == invitation.next:
+                    next_url = invitation.next
+                    request.facebook.request('%s_%s' % (invitation.request_id,
+                                                        facebook_user.uid),
+                                             method='delete')
+            except FacebookInvitation.DoesNotExist:
+                pass
+
+        if next_url:
+            return redirect(next_url)
+
+        return super(FacebookInvitationMixin, self).dispatch(request,
+                                                             *args,
+                                                             **kwargs)
 
 
 class LikeGateMixin(object):
