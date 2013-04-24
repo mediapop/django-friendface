@@ -113,14 +113,16 @@ class FacebookInvitationAdmin(admin.ModelAdmin):
                      'receiver__first_name',
                      'receiver__last_name')
     date_hierarchy = 'created'
-    readonly_fields = ('created',
+    readonly_fields = ('request_id',
+                       'created',
                        'application',
                        'sender',
                        'receiver',
                        'accepted',
                        'next')
     list_filter = ('application',)
-    list_display = ('__unicode__', 'is_accepted')
+    list_display = ('__unicode__', 'created', 'sender', 'receiver',
+                    'is_accepted')
 
     def is_accepted(self, obj):
         return obj.accepted is not None
