@@ -107,7 +107,8 @@ def record_facebook_invitation(request):
             receiver=recipient,
             request_id=request_id,
             application=application,
-            sender=profile.facebook)
+            sender=profile.facebook,
+            next=request.POST.get('next'))
 
     return HttpResponse(json.dumps({'result': 'ok'}))
 
