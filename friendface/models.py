@@ -19,14 +19,18 @@ logger = logging.getLogger('friendface')
 
 
 class FacebookRequestMixin(object):
-    def request(self, path, args=None, post_args=None):
-        graph = facebook.GraphAPI(self.access_token)
-        return graph.request(path, args, post_args)
+    def request(self, path, args=None, post_args=None, method=None):
+        if not method:
+            method = 'post' if post_args else 'get'
+        assert method in ('post', 'get', 'delete')
+
+        url = "https://graph.facebook.com/%s" % path
+        params = dict({'access_token': self.access_token}, **(args or {}))
+
+        return getattr(requests, method)(url, params, post_args).json
 
     def fql(self, query):
-        params = {'access_token': self.access_token, 'q': query}
-        response = requests.get("https://graph.facebook.com/fql", params=params)
-        return response.json
+        return self.request('fql', {'q': query})
 
 
 class AccessTokenMixin(models.Model):
