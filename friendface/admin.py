@@ -2,7 +2,7 @@ from django.contrib import admin
 from friendface.models import (FacebookApplication,
                                FacebookPage,
                                FacebookUser,
-                               FacebookTab, FacebookInvitation)
+                               FacebookTab, FacebookInvitation, FacebookAuthorization)
 
 
 class PageTabInline(admin.StackedInline):
@@ -129,8 +129,19 @@ class FacebookInvitationAdmin(admin.ModelAdmin):
     is_accepted.boolean = True
 
 
+class FacebookAuthorizationAdmin(admin.ModelAdmin):
+    readonly_fields = (
+        'application',
+        'scope',
+        'redirect_uri',
+        'next'
+    )
+    list_display = (
+        'application', 'scope', 'redirect_uri', 'next'
+    )
+
 admin.site.register(FacebookPage, FacebookPageAdmin)
 admin.site.register(FacebookApplication, FacebookApplicationAdmin)
 admin.site.register(FacebookUser, FacebookUserAdmin)
 admin.site.register(FacebookInvitation, FacebookInvitationAdmin)
-#admin.site.register(FacebookInvitation)
+admin.site.register(FacebookAuthorization, FacebookAuthorizationAdmin)
