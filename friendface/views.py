@@ -141,7 +141,9 @@ class FacebookAppAuthMixin(object):
             return self.auth_url
 
         if self.request.FACEBOOK:
-            return self.request.facebook.build_canvas_url(self.request.path)
+            return self.request.facebook.build_canvas_url(
+                self.request.get_full_path()
+            )
         else:
             return self.request.build_absolute_uri()
 
