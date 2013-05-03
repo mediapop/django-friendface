@@ -27,7 +27,8 @@ class FacebookRequestMixin(object):
         url = "https://graph.facebook.com/%s" % path
         params = dict({'access_token': self.access_token}, **(args or {}))
 
-        return getattr(requests, method)(url, params, post_args).json
+        return requests.request(method, url,
+                                params=params, data=post_args).json
 
     def fql(self, query):
         return self.request('fql', {'q': query})
