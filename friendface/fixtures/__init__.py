@@ -18,12 +18,14 @@ def random_hex_string(length, max_length=None):
     )
 
 
-def create_user(connect_user_with_app=False):
-    fb_app = FacebookApplicationFactory.build()
+def create_user(connect_user_with_app=False,
+                application_kwargs={},
+                facebook_user_kwargs={}):
+    fb_app = FacebookApplicationFactory.build(**application_kwargs)
     fb_app._pre_save = Mock(return_value=True)
     fb_app.save()
 
-    fb_user = FacebookUserFactory.build()
+    fb_user = FacebookUserFactory.build(**facebook_user_kwargs)
     if connect_user_with_app: fb_user.application = fb_app
     fb_user.save()
 
