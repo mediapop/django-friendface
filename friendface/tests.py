@@ -34,13 +34,11 @@ class FacebookAuthorizedTestCase(TestCase):
         patcher.start()
         self.addCleanup(patcher.stop)
 
-
         app = FacebookApplication.objects.get()
         self.auth = FacebookAuthorization.objects.create(application=app,
-                                             next='/',
-                                             scope='',
-                                             redirect_uri='')
-
+                                                         next='/',
+                                                         scope='',
+                                                         redirect_uri='')
 
     def test_creates_facebook_user_if_not_exists(self):
         self.assertEqual(FacebookUser.objects.count(), 0)
@@ -99,14 +97,14 @@ class FacebookPostAsGetMixinTestCase(TestCase):
         self.request.method = 'post'
         self.request.META = {'SERVER_NAME': 'localserver', 'SERVER_PORT': 80}
         self.request.path = '/same-url/'
-        setattr(self.request,'FACEBOOK', {'true': 'value'})
+        setattr(self.request, 'FACEBOOK', {'true': 'value'})
         setattr(self.request, 'facebook', FacebookApplication.objects.get())
         self.base_url = reverse(
             'friendface.views.authorize',
             kwargs={'application_id': self.request.facebook.id})
 
     def test_regular_post(self):
-        setattr(self.request,'FACEBOOK', {})
+        setattr(self.request, 'FACEBOOK', {})
 
         class TestView(FacebookPostAsGetMixin, View):
             def get(self, request, *args, **kwargs):
@@ -135,8 +133,8 @@ class FacebookAuthorizationMixinTestCase(TestCase):
         self.request = HttpRequest()
         self.request.META = {'SERVER_NAME': 'localserver', 'SERVER_PORT': 80}
         self.request.path = '/same-url/'
-        setattr(self.request,'user', AnonymousUser())
-        setattr(self.request,'FACEBOOK', {})
+        setattr(self.request, 'user', AnonymousUser())
+        setattr(self.request, 'FACEBOOK', {})
         setattr(self.request, 'facebook', FacebookApplication.objects.get())
         self.base_url = reverse(
             'friendface.views.authorize',
@@ -253,3 +251,13 @@ class FacebookApplicationMatchingTestCase(TestCase):
                                            secure_canvas_url='foo')
         with self.assertRaises(FacebookApplication.DoesNotExist):
             FacebookApplication.get_for_request(self.request)
+
+
+class ChannelViewTest(TestCase):
+    URL = reverse('friendface.views.channel')
+
+    def test_set_max_age(self):
+        res = self.client.get(self.URL)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.get('Cache-Control'),
+                         'public, max-age=31536000')

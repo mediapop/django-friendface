@@ -94,7 +94,10 @@ def authorize(request, application_id):
 
 
 def channel(request):
-    return render(request, 'channel.html')
+    response = render(request, 'channel.html')
+    response['Cache-Control'] = 'public, max-age=31536000'  # One year
+
+    return response
 
 
 def record_facebook_invitation(request):
