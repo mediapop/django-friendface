@@ -1,19 +1,20 @@
 import json
 import random
 import urllib2
+
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User, SiteProfileNotAvailable
-from django.core.exceptions import ObjectDoesNotExist
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render, redirect
 from django.utils import timezone
 from django.utils.baseconv import BASE62_ALPHABET
 from facebook import GraphAPI
-from django.views.generic import TemplateView, RedirectView
-from friendface.shortcuts import redirectjs
+from django.views.generic import RedirectView, TemplateView, View
+
 from friendface.models import (FacebookApplication, FacebookAuthorization,
                                FacebookUser, FacebookInvitation)
+from friendface.shortcuts import redirectjs
 
 
 def authorized(request, authorization_id):
@@ -101,10 +102,27 @@ def channel(request):
 
 
 def record_facebook_invitation(request):
+    '''Expects a post request formatted just as the Facebook App
+    request response sent through the wire encoded by jQuery.
+
+    If you need to do processing after the invitation has been created
+    then use FacebookInvitationCreateView.
+
+    POST keys:
+      request: The Facebook request id
+      to[]: A list of Facebook UIDs that the request was sent to.
+      next: Optional argument for where the user is to be redirected after
+            the invitation has been accepted.
+
+    Returns:
+      400 when no request has been set
+      201 when invitations has been successfully created
+    '''
+    request_id = request.POST.get('request')
+    if not request_id: return HttpResponseBadRequest('No request set.')
+
     profile = request.user.get_profile()
     application = profile.facebook.application
-
-    request_id = request.POST.get('request')
 
     for recipient in request.POST.getlist('to[]'):
         FacebookInvitation.create_with_receiver(
@@ -114,7 +132,9 @@ def record_facebook_invitation(request):
             sender=profile.facebook,
             next=request.POST.get('next'))
 
-    return HttpResponse(json.dumps({'result': 'ok'}))
+    return HttpResponse(json.dumps({'result': 'ok'}),
+                        content_type='application/json',
+                        status=201)
 
 
 class FacebookPostAsGetMixin(object):
@@ -274,6 +294,68 @@ class FacebookInvitationMixin(object):
         return super(FacebookInvitationMixin, self).dispatch(request,
                                                              *args,
                                                              **kwargs)
+
+
+class FacebookInvitationCreateView(View):
+    '''Use this view if you need to do some extra handling after the
+    invitation has been created by overriding `handle_invitation`.
+
+    If only stock behavior is needed look at `record_facebook_invitation`.
+    '''
+
+    def handle_invitation(self, invitation):
+        '''Called after the invitation has been created in get_context_data'''
+        pass
+
+    def get_context_data(self, **kwargs):
+        '''Expects a post request formatted just as the Facebook App
+        request response sent through the wire encoded by jQuery.
+
+        POST keys:
+          request: The Facebook request id
+          to[]: A list of Facebook UIDs that the request was sent to.
+          next: Optional argument for where the user is to be redirected after
+                the invitation has been accepted.
+
+        Raises:
+           ValueError when request is not available
+        '''
+        context = (super(FacebookInvitationCreateView, self)
+                   .get_context_data(**kwargs))
+        request = self.request.POST.get('request')
+        if not request: raise ValueError('No request id specified')
+
+        context.update({
+            'request_id': request,
+            'sender': self.request.user.get_profile().facebook,
+            'application': self.request.facebook,
+            'next': self.request.POST.get('next'),
+            'invitations': []
+        })
+
+        for recipient in self.request.POST.getlist('to[]'):
+            invitation = FacebookInvitation.create_with_receiver(
+                receiver=recipient,
+                request_id=context['request_id'],
+                application=context['application'],
+                sender=context['sender'],
+                next=context['next'],
+            )
+
+            context['invitations'].append(invitation)
+            self.handle_invitation(invitation)
+
+        return context
+
+    def post(self, *args, **kwargs):
+        try:
+            self.get_context_data(**kwargs)
+        except ValueError:
+            return HttpResponseBadRequest('No request set.')
+
+        return HttpResponse('{"status": "ok"}',
+                            content_type='application/json',
+                            status=201)
 
 
 class LikeGateMixin(object):
