@@ -19,14 +19,14 @@ def random_hex_string(length, max_length=None):
 
 
 def create_user(connect_user_with_app=False,
+                application=None,
                 application_kwargs={},
                 facebook_user_kwargs={}):
-    fb_app = FacebookApplicationFactory.build(**application_kwargs)
-    fb_app._pre_save = Mock(return_value=True)
-    fb_app.save()
+    if not application:
+        application = FacebookApplicationFactory.create(**application_kwargs)
 
     fb_user = FacebookUserFactory.build(**facebook_user_kwargs)
-    if connect_user_with_app: fb_user.application = fb_app
+    if connect_user_with_app: fb_user.application = application
     fb_user.save()
 
     user = User.objects.create_user(username=random_hex_string(15),
@@ -40,35 +40,48 @@ def create_user(connect_user_with_app=False,
     profile.facebook = fb_user
     profile.save()
 
-    return (fb_user, user)
+    return (fb_user, user, application)
 
 
-class FacebookUserFactory(factory.DjangoModelFactory):
-    FACTORY_FOR = FacebookUser
+class DontRunPreSaveMixin(object):
+    @classmethod
+    def _prepare(cls, create, **kwargs):
+        model = super(DontRunPreSaveMixin, cls)._prepare(False, **kwargs)
+        model._pre_save = Mock(return_value=True)
 
-    uid = 50021084
-    first_name = 'Random user'
-    last_name = factory.Sequence(lambda n: 'No. {}'.format(n))
-    access_token = factory.LazyAttribute(lambda a: random_hex_string(50, 64))
-    application_id = 1234567890
-    email = factory.Sequence(lambda n: 'fake-user-{}'.format(n))
+        if create:
+            model.save()
+
+        return model
 
 
-class FacebookApplicationFactory(factory.DjangoModelFactory):
+class FacebookApplicationFactory(DontRunPreSaveMixin,
+                                 factory.DjangoModelFactory):
         FACTORY_FOR = FacebookApplication
 
-        id = 1234567890
+        id = factory.LazyAttribute(lambda _: 8 ** random.randrange(16, 20))
         name = 'Test application for the greater good'
-        secret = 'b0809lcjkf095'
+        secret = factory.LazyAttribute(lambda x: random_hex_string(16, 32))
         default_scope = 'user_likes,email'
         namespace = 'fake-test-app'
         website_url = 'http://testserver/dashboard/'
 
 
-class FacebookPageFactory(factory.DjangoModelFactory):
+class FacebookUserFactory(factory.DjangoModelFactory):
+    FACTORY_FOR = FacebookUser
+
+    uid = factory.LazyAttribute(lambda _: 8 ** random.randrange(16, 20))
+    first_name = 'Random user'
+    last_name = factory.Sequence(lambda n: 'No. {}'.format(n))
+    access_token = factory.LazyAttribute(lambda a: random_hex_string(50, 64))
+    application_id = 0  # Fake app unless someone overrides application
+    email = factory.Sequence(lambda n: 'fake-user-{}'.format(n))
+
+
+class FacebookPageFactory(DontRunPreSaveMixin, factory.DjangoModelFactory):
     FACTORY_FOR = FacebookPage
 
-    id = 123456
+    id = factory.LazyAttribute(lambda _: 8 ** random.randrange(16, 20))
 
 
 class PageAdminFactory(factory.DjangoModelFactory):

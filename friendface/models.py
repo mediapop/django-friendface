@@ -173,7 +173,8 @@ class FacebookAuthorization(models.Model):
         return "{0}?{1}".format(facebook_url, query)
 
 
-class FacebookApplication(AccessTokenMixin, models.Model, FacebookRequestMixin):
+class FacebookApplication(AccessTokenMixin, models.Model,
+                          FacebookRequestMixin):
     id = models.BigIntegerField(primary_key=True)
     name = models.CharField(max_length=32,
                             null=True,
@@ -468,11 +469,14 @@ class FacebookPage(models.Model):
         help_text='The Facebook Users that are admins for this page'
     )
 
-    def save(self, *args, **kwargs):
+    def _pre_save(self):
         graph = facebook.GraphAPI()
         page_data = graph.request(unicode(self.id))
         for key, value in page_data.items():
             setattr(self, key, value)
+
+    def save(self, *args, **kwargs):
+        self._pre_save()
         super(FacebookPage, self).save(*args, **kwargs)
 
     def get_absolute_url(self):
