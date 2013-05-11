@@ -66,6 +66,17 @@ class FacebookApplicationFactory(DontRunPreSaveMixin,
         namespace = 'fake-test-app'
         website_url = 'http://testserver/dashboard/'
 
+        @classmethod
+        def _prepare(cls, create, **kwargs):
+            if('website_url' in kwargs
+               and not kwargs['website_url'].startswith('http')):
+                kwargs['website_url'] = 'http://testserver{0}'.format(
+                    kwargs['website_url']
+                )
+
+            return (super(FacebookApplicationFactory, cls)
+                    ._prepare(create, **kwargs))
+
 
 class FacebookUserFactory(factory.DjangoModelFactory):
     FACTORY_FOR = FacebookUser

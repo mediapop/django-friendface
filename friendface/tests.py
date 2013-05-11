@@ -12,6 +12,7 @@ import urllib
 from django.contrib.auth.models import AnonymousUser
 from django.core.urlresolvers import reverse
 from friendface.views import FacebookAppAuthMixin, FacebookPostAsGetMixin
+from friendface.fixtures import FacebookApplicationFactory
 
 TEST_USER = {
     'id': 12345678,
@@ -261,3 +262,37 @@ class ChannelViewTest(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.get('Cache-Control'),
                          'public, max-age=31536000')
+
+
+class FacebookApplicationInstallRedirectViewTest(TestCase):
+    def setUp(self):
+        self.app = FacebookApplicationFactory.create()
+
+    def test_should_redirect_with_application_id_given(self):
+        res = self.client.get(reverse('friendface.views.install',
+                                      kwargs=dict(application_id=self.app.id)))
+        self.assertEqual(res.status_code, 302)
+        self.assertTrue('facebook.com/dialog/pagetab' in res.get('Location'))
+        self.assertTrue('app_id={0}'.format(self.app.pk)
+                        in res.get('Location'))
+
+    def test_should_raise_400_on_invalid_app_id(self):
+        res = self.client.get(reverse('friendface.views.install',
+                                      kwargs=dict(application_id=1234)))
+        self.assertEqual(res.status_code, 400)
+        self.assertTrue('No application' in res.content)
+
+    def test_no_configured_app_should_raise_400(self):
+        res = self.client.get(reverse('friendface.views.install'))
+        self.assertEqual(res.status_code, 400)
+        self.assertTrue('No app configured on this URL' in res.content)
+
+    def test_app_configured_and_no_application_id_given_should_redirect(self):
+        url = reverse('friendface.views.install')
+        app = FacebookApplicationFactory.create(
+            website_url=url.replace('install/', '')
+        )
+        res = self.client.get(url)
+
+        self.assertEqual(res.status_code, 302)
+        self.assertTrue('app_id={0}'.format(app.pk) in res.get('Location'))

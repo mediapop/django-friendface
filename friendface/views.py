@@ -5,12 +5,12 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User, SiteProfileNotAvailable
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.exceptions import ImproperlyConfigured
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render, redirect
 from django.utils import timezone
 from django.utils.baseconv import BASE62_ALPHABET
 from facebook import GraphAPI
-from django.views.generic import TemplateView
+from django.views.generic import TemplateView, RedirectView
 from friendface.shortcuts import redirectjs
 from friendface.models import (FacebookApplication, FacebookAuthorization,
                                FacebookUser, FacebookInvitation)
@@ -174,6 +174,57 @@ class FacebookAppAuthMixin(object):
 
         auth_url = self.get_auth_url()
         return self.redirect(request.facebook.get_authorize_url(auth_url))
+
+
+class FacebookApplicationInstallRedirectView(RedirectView):
+    '''Redirect to the correct place where the user can install this
+    app to their Facebook page.
+
+    To use simply add the following to your urls.py
+      url('^install/$', FacebookAppInstallRedirectView.as_view(),
+          name='install')
+
+    Accepted kwargs:
+      application_id: If application_id is captured in urls.py that will
+                      be used instead of the automatic from friendface.
+
+    Configurable variables:
+      app_redirect_field: The field on FacebookApplication that will be
+                          used for return URL after the app has installed.
+                          Default: 'secure_canvas_url'
+    '''
+    app_redirect_field = 'secure_canvas_url'
+    permanent = False
+
+    def dispatch(self, request, *args, **kwargs):
+        if 'application_id' in kwargs:
+            try:
+                self.application = FacebookApplication.objects.get(
+                    pk=kwargs.pop('application_id')
+                )
+            except FacebookApplication.DoesNotExist:
+                return HttpResponseBadRequest('No application with that id.')
+        else:
+            if hasattr(request, 'facebook'):
+                self.application = request.facebook
+            else:
+                return HttpResponseBadRequest('No app configured on this URL.')
+
+        return (super(FacebookApplicationInstallRedirectView, self)
+                .dispatch(request, *args, **kwargs))
+
+    def get_redirect_url(self, **kwargs):
+        if not self.app_redirect_field:
+            raise ImproperlyConfigured(
+                'FacebookApplicationInstallRedirectView requires '
+                'app_redirect_field to be set'
+            )
+
+        return ('https://www.facebook.com/dialog/pagetab'
+                '?app_id={0}&redirect_uri={1}').format(
+                    self.application.pk,
+                    getattr(self.application, self.app_redirect_field)
+                )
 
 
 class FacebookInvitationMixin(object):
