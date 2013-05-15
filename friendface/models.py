@@ -190,7 +190,7 @@ class FacebookApplication(AccessTokenMixin, models.Model,
         here by clicking the application icon, or via invites etc.""",
         blank=True,
         null=True)
-    namespace = models.CharField(max_length=20,
+    namespace = models.CharField(max_length=22,
                                  blank=True,
                                  null=True)
 
@@ -459,7 +459,7 @@ class FacebookPage(models.Model):
     category = models.CharField(max_length=32, blank=True, null=True)
     name_space = models.CharField(
         help_text="A FacebookPage can have a name-space which is in the URL",
-        max_length=20,
+        max_length=22,
         blank=True,
         null=True)
     is_published = models.NullBooleanField(blank=True,
