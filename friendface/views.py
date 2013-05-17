@@ -130,6 +130,20 @@ class FacebookPostAsGetMixin(object):
             request, *args, **kwargs)
 
 
+class MobileView(RedirectView):
+    """ If you set Facebooks mobile view to go here all fburl's will behave like
+    regular url."""
+    # @todo In the event that a users session drop, fburl will behave like
+    # normal. It should be possible to do something like url(r'/mobile/.*,)
+    # strip mobile, set the session var again and redirect the user to the right
+    # view.
+    permanent = False
+
+    def dispatch(self, request, *args, **kwargs):
+        request.session['is_facebook_mobile'] = True
+        return super(MobileView, self).dispatch(request, *args, **kwargs)
+
+
 class FacebookEnabledTemplateView(FacebookPostAsGetMixin, TemplateView):
     """ So that we can use TemplateView in urls.py even when on Facebook. """
 

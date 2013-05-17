@@ -10,12 +10,16 @@ class FacebookUrlNode(template.Node):
 
     def render(self, context):
         #@todo We should let the page URL take priority.
-        local_path = self.url_node.render(context)
+        path = self.url_node.render(context)
         request = context.get('request')
-        if not request: return ''
-        if not hasattr(request, 'facebook'): return ''
+        if not request:
+            return ''
+        if request.session.get('is_facebook_mobile'):
+            return path
+        if not hasattr(request, 'facebook'):
+            return ''
         application = request.facebook
-        return application.build_canvas_url(local_path)
+        return application.build_canvas_url(path)
 
 
 @register.tag
