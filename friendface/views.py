@@ -334,8 +334,7 @@ class FacebookInvitationCreateView(View):
         Raises:
            ValueError when request is not available
         '''
-        context = (super(FacebookInvitationCreateView, self)
-                   .get_context_data(**kwargs))
+        context = {}
         request = self.request.POST.get('request')
         if not request: raise ValueError('No request id specified')
 
