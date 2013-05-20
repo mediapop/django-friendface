@@ -130,7 +130,7 @@ def record_facebook_invitation(request):
             request_id=request_id,
             application=application,
             sender=profile.facebook,
-            next=request.POST.get('next'))
+            next=request.POST.get('next', ''))
 
     return HttpResponse(json.dumps({'result': 'ok'}),
                         content_type='application/json',
@@ -294,7 +294,7 @@ class FacebookInvitationMixin(object):
                     receiver=facebook_user)
                 invitation.accepted = timezone.now()
                 invitation.save()
-                if invitation.next is None or next == invitation.next:
+                if not invitation.next or next == invitation.next:
                     next_url = invitation.next
                     request.facebook.request('%s_%s' % (invitation.request_id,
                                                         facebook_user.uid),
@@ -342,7 +342,7 @@ class FacebookInvitationCreateView(View):
             'request_id': request,
             'sender': self.request.user.get_profile().facebook,
             'application': self.request.facebook,
-            'next': self.request.POST.get('next'),
+            'next': self.request.POST.get('next', ''),
             'invitations': []
         })
 
@@ -363,8 +363,8 @@ class FacebookInvitationCreateView(View):
     def post(self, *args, **kwargs):
         try:
             self.get_context_data(**kwargs)
-        except ValueError:
-            return HttpResponseBadRequest('No request set.')
+        except ValueError as e:
+            return HttpResponseBadRequest('No request set. {0}'.format(e))
 
         return HttpResponse('{"status": "ok"}',
                             content_type='application/json',
