@@ -22,10 +22,22 @@ TEST_USER = {
 }
 
 
-class FacebookAuthorizedTestCase(TestCase):
-    fixtures = ["friendface/application.json"]
+def old_fixture_equivalent():
+    return FacebookApplicationFactory.create(
+        id=1,
+        name='foo',
+        secret='bar',
+        namespace='mhe',
+        canvas_url='http://testserver/',
+        secure_canvas_url='https://testserver/',
+        link=('http://www.facebook.com/apps/application.php?'
+              'id=382752368461014')
+    )
 
+
+class FacebookAuthorizedTestCase(TestCase):
     def setUp(self):
+        old_fixture_equivalent()  # for old tests to work
         patcher = patch.object(FacebookAuthorization,
                                'get_access_token',
                                lambda a, b: u'☃')
@@ -61,7 +73,8 @@ class FacebookAuthorizedTestCase(TestCase):
 
 
 class FacebookApplicationTestCase(TestCase):
-    fixtures = ["friendface/application.json"]
+    def setUp(self):
+        old_fixture_equivalent()  # for old tests to work
 
     def test_authorize_url(self):
         app = FacebookApplication.objects.get()
@@ -91,9 +104,8 @@ class FacebookApplicationTestCase(TestCase):
 
 
 class FacebookPostAsGetMixinTestCase(TestCase):
-    fixtures = ["friendface/application.json"]
-
     def setUp(self):
+        old_fixture_equivalent()  # for old tests to work
         self.request = HttpRequest()
         self.request.method = 'post'
         self.request.META = {'SERVER_NAME': 'localserver', 'SERVER_PORT': 80}
@@ -128,9 +140,8 @@ class FacebookPostAsGetMixinTestCase(TestCase):
 
 
 class FacebookAuthorizationMixinTestCase(TestCase):
-    fixtures = ["friendface/application.json"]
-
     def setUp(self):
+        old_fixture_equivalent()  # for old tests to work
         self.request = HttpRequest()
         self.request.META = {'SERVER_NAME': 'localserver', 'SERVER_PORT': 80}
         self.request.path = '/same-url/'
@@ -182,9 +193,8 @@ class environment:
 
 
 class FacebookApplicationMatchingTestCase(TestCase):
-    fixtures = ["friendface/application.json"]
-
     def setUp(self):
+        old_fixture_equivalent()  # for old tests to work
         self.request = HttpRequest()
         self.request.path = '/foo'
         self.request.META = {'SERVER_NAME': 'www.foo.com', 'SERVER_PORT': 80}

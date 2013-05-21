@@ -26,6 +26,7 @@ setup(
         'requests==0.14.0',
         'mock==1.0.1',
         'django-model-utils==1.1.0',
+        'factory-boy==2.0.2',
     ],
     dependency_links = [
         #'git+git://github.com/Celc/facebook-sdk.git#egg=facebook-sdk',

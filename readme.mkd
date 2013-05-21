@@ -60,3 +60,12 @@ Decodes the `signed_request` and makes it accessible via `request.FACEBOOK`
 #### FacebookSignedRequestAuthenticationMiddleware
 
 Reads the `user_id` from a decoded request and signs that user in.
+
+#### To run test suite
+friendface is prepared for testing both it's Javascript and Python components.
+Simply ensure that you got all Python requirements installed and that you
+got a recent version of node.js with npm installed. Then simply type:
+
+$ make test
+
+If necessary npm will install requirements for phantom.js.

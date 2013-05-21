@@ -4,8 +4,8 @@ import random
 import factory
 from mock import Mock
 
-from friendface.models import (FacebookUser, FacebookApplication,
-                               FacebookPage, PageAdmin)
+from .models import (FacebookUser, FacebookApplication,
+                     FacebookPage, PageAdmin)
 
 
 def random_hex_string(length, max_length=None):

@@ -1,2 +1,2 @@
 recursive-include friendface/templates *
-recursive-include friendface/fixtures *
+recursive-include test/*

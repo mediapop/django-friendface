@@ -6,3 +6,6 @@
 
 # pip
 django_friendface.egg-info
+
+# nodejs (used for testing)
+node_modules
