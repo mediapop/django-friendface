@@ -10,10 +10,15 @@ test-py:
 test-js: node_modules
 	$(PHANTOMJS) test/tests.html
 
-test: test-py test-js
+test: test-js coverage
 
 node_modules: package.json
 	npm install
+
+coverage:
+	[ -d htmlcov ] && rm -rf htmlcov
+	coverage run test/runtests.py && \
+		coverage html --omit="admin.py,*.virtualenvs/*,./test/*"
 
 clean:
 	find . -name '*.pyc' | xargs rm -f

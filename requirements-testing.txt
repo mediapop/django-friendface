@@ -9,3 +9,4 @@ factory-boy==2.0.2
 
 -e git+git://github.com/Celc/facebook-sdk.git#egg=facebook-sdk
 
+coverage==3.6
