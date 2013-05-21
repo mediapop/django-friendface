@@ -16,7 +16,11 @@ node_modules: package.json
 	npm install
 
 coverage:
-	[ -d htmlcov ] && rm -rf htmlcov
+	coverage run test/runtests.py && \
+		coverage xml --omit="admin.py,*.virtualenvs/*,./test/*"
+
+coverage-html:
+	[ -d htmlcov ] || rm -rf htmlcov
 	coverage run test/runtests.py && \
 		coverage html --omit="admin.py,*.virtualenvs/*,./test/*"
 
