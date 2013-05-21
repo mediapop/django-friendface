@@ -365,6 +365,13 @@ class FacebookApplication(AccessTokenMixin, models.Model,
             authorize_url += "?" + urllib.urlencode({"next": next})
         return authorize_url
 
+    def get_installation_url(self, redirect_field='secure_canvas_url'):
+        return ('https://www.facebook.com/dialog/pagetab'
+                '?app_id={0}&redirect_uri={1}').format(
+                    self.pk,
+                    getattr(self, redirect_field)
+                )
+
     def decode(self, signed_request):
         return parse_signed_request(signed_request, str(self.secret))
 

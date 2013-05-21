@@ -22,7 +22,8 @@ class FacebookPageAdmin(admin.ModelAdmin):
 
 
 class FacebookApplicationAdmin(admin.ModelAdmin):
-    list_display = ('__unicode__', 'id', 'has_privacy_policy', 'url')
+    list_display = ('__unicode__', 'id', 'has_privacy_policy', 'url',
+                    '_installation_url')
     readonly_fields = ('name',
                        'access_token',
                        'namespace',
@@ -85,6 +86,15 @@ class FacebookApplicationAdmin(admin.ModelAdmin):
         else:
             return ''
     url.allow_tags = True
+
+    def _installation_url(self, obj):
+        if obj.secure_canvas_url:
+            return '<a href="{0}" target="_blank">Install</a>'.format(
+                obj.get_installation_url()
+            )
+        else:
+            return ''
+    _installation_url.allow_tags = True
 
     inlines = (PageTabInline,)
 
