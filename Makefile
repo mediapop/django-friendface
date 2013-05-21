@@ -16,7 +16,7 @@ node_modules: package.json
 	npm install
 
 coverage:
-	coverage run test/runtests.py && \
+	coverage run test/runtests.py --with-xunit && \
 		coverage xml --omit="admin.py,*.virtualenvs/*,./test/*"
 
 coverage-html:
