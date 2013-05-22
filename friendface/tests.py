@@ -336,6 +336,15 @@ class FacebookInvitationMixinTest(TestCase):
                           FacebookInvitation.objects.get,
                           request_id=request_id)
 
+    def test_authed_user_with_no_request_ids(self, _):
+        '''Should not do a redirect or anything, just accept on'''
+        self.assertTrue(self.client.login(facebook_user=self.fb_user))
+        res = self.client.get(self.URL)
+        self.assertEqual(res.status_code, 200)
+        self.assertFalse(FacebookInvitation.objects
+                         .exclude(accepted=None)
+                         .exists())
+
     def test_vanilla_authed_user_accept_invitation(self, _):
         self.assertTrue(self.client.login(facebook_user=self.fb_user))
         res = self.client.get(self.URL, {
