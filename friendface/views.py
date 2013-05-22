@@ -32,39 +32,36 @@ def authorized(request, authorization_id):
         return redirect(auth.get_facebook_authorize_url())
 
     request_data = GraphAPI(access_token).get_object('me')
+    facebook_user_data = {
+        'access_token': access_token,
+        'first_name': request_data['first_name'],
+        'last_name': request_data['last_name'],
+        'locale': request_data.get('locale'),
+        'timezone': request_data.get('timezone'),
+        'religion': request_data.get('religion'),
+        'location': request_data.get('location', {}).get('name'),
+        'gender': request_data.get('gender'),
+        'email': request_data.get('email')
+    }
     facebook_user, created = FacebookUser.objects.get_or_create(
         uid=request_data['id'],
-        application=auth.application)
-    facebook_user.access_token = access_token
-    facebook_user.first_name = request_data['first_name']
-    facebook_user.last_name = request_data['last_name']
-    facebook_user.locale = request_data.get('locale')
-    facebook_user.timezone = request_data.get('timezone')
-    facebook_user.religion = request_data.get('religion')
-    facebook_user.location = request_data.get('location', {}).get('name')
-    facebook_user.gender = request_data.get('gender')
-    facebook_user.email = request_data.get('email')
-    facebook_user.save()
-
-    authenticated_user = authenticate(facebook_user=facebook_user)
-    if authenticated_user is None:
-        # @todo import the profile and check if it has a foreignkey to
-        # FacebookUser
+        application=auth.application,
+        defaults=facebook_user_data)
+    if created:
         username = "".join(random.choice(BASE62_ALPHABET) for i in xrange(30))
         user = User.objects.create_user(username=username,
                                         email=facebook_user.email)
-        user.first_name = facebook_user.first_name
-        user.last_name = facebook_user.last_name
+        user.first_name = request_data['first_name']
+        user.last_name = request_data['last_name']
         user.set_unusable_password()
+        facebook_user.user = user
         user.save()
+        facebook_user.save()
+    else:
+        facebook_user.__dict__.update(facebook_user_data)
+        facebook_user.save()
 
-        try:
-            profile = user.get_profile()
-            profile.facebook = facebook_user
-            profile.save()
-            authenticated_user = authenticate(facebook_user=facebook_user)
-        except SiteProfileNotAvailable:
-            user.delete()
+    authenticated_user = authenticate(facebook_user=facebook_user)
 
     if not authenticated_user is None:
         if authenticated_user.is_active:
@@ -102,7 +99,7 @@ def channel(request):
 
 
 def record_facebook_invitation(request):
-    '''Expects a post request formatted just as the Facebook App
+    """ Expects a post request formatted just as the Facebook App
     request response sent through the wire encoded by jQuery.
 
     If you need to do processing after the invitation has been created
@@ -117,19 +114,21 @@ def record_facebook_invitation(request):
     Returns:
       400 when no request has been set
       201 when invitations has been successfully created
-    '''
+    """
     request_id = request.POST.get('request')
-    if not request_id: return HttpResponseBadRequest('No request set.')
+    if not request_id:
+        return HttpResponseBadRequest('No request set.')
 
-    profile = request.user.get_profile()
-    application = profile.facebook.application
+    application = request.facebook
+    facebook_user = request.facebook_user
+    request.facebook.facebookusers.get(user=request.user)
 
     for recipient in request.POST.getlist('to[]'):
         FacebookInvitation.create_with_receiver(
             receiver=recipient,
             request_id=request_id,
             application=application,
-            sender=profile.facebook,
+            sender=request.user.facebook,
             next=request.POST.get('next', ''))
 
     return HttpResponse(json.dumps({'result': 'ok'}),

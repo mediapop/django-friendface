@@ -76,6 +76,10 @@ class FacebookUser(AccessTokenMixin, models.Model, FacebookRequestMixin):
         'FacebookPage', through='PageAdmin',
         help_text='The pages this user is admin for'
     )
+    user = models.ForeignKey('auth.User',
+                             blank=True,
+                             null=True,
+                             related_name='facebookusers')
 
     class Meta:
         unique_together = ('uid', 'application')

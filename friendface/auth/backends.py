@@ -1,11 +1,5 @@
-from django.conf import settings
 from django.contrib.auth.models import User
 from friendface.models import FacebookUser
-
-# Get the name of the AUTH profile so that we can check if the user
-# has a relationship with facebook. Is there a neater way of doing this?
-_lowercase_profile_name = settings.AUTH_PROFILE_MODULE.split(".")[1].lower()
-_facebook_relation = '{0}__facebook'.format(_lowercase_profile_name)
 
 
 class FacebookBackend(object):
@@ -15,7 +9,7 @@ class FacebookBackend(object):
     def authenticate(self, facebook_user):
         assert(isinstance(facebook_user, FacebookUser))
         try:
-            return User.objects.get(**{_facebook_relation: facebook_user})
+            return User.objects.get(facebook_user=facebook_user)
         except User.DoesNotExist:
             return None
 
