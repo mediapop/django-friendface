@@ -395,8 +395,8 @@ class LikeGateMixin(object):
     def get_like_gate_template(self):
         if not self.like_gate_template:
             raise ImproperlyConfigured(
-                "LikeGateMixin requires get_fan_gate_template to return a "
-                "template by being overridden or having like_gate_template set")
+                'LikeGateMixin requires get_fan_gate_template to be set '
+            )
         return self.like_gate_template
 
     def get_like_gate_target(self):
@@ -405,11 +405,11 @@ class LikeGateMixin(object):
     def dispatch(self, request, *args, **kwargs):
         page = request.FACEBOOK.get('page', {})
         like_gate_target = self.get_like_gate_target()
-        if page and not page['liked'] and (not like_gate_target or
-                     int(page['id']) == like_gate_target):
+        if(page and not page['liked']
+           and (not like_gate_target or int(page['id']) == like_gate_target)):
             return render(request, self.get_like_gate_template())
         elif like_gate_target and int(page.get('id', 0)) != like_gate_target:
-            try: #@todo Drop get_profile() for 1.5
+            try:  # @todo Drop get_profile() for 1.5
                 facebook_user = request.user.get_profile().facebook
                 if facebook_user is None: raise ObjectDoesNotExist
             except ObjectDoesNotExist:
