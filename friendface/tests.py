@@ -1,18 +1,24 @@
 # -*- encoding: utf-8 -*-
-from django.contrib.auth.models import User
-from django.views.generic import View
-from facebook import GraphAPI
 import os
-from mock import patch
+import urllib
+import unittest
+
+from django.contrib.auth.models import AnonymousUser
+from django.contrib.auth.models import User
+from django.core.urlresolvers import reverse, NoReverseMatch
 from django.http import HttpRequest
 from django.test.testcases import TestCase
-from friendface.models import FacebookApplication, FacebookAuthorization, \
-    FacebookUser
-import urllib
-from django.contrib.auth.models import AnonymousUser
-from django.core.urlresolvers import reverse
+from django.views.generic import View
+
+from facebook import GraphAPI
+from mock import patch
+
+from friendface.fixtures import (create_user, FacebookApplicationFactory,
+                                 FacebookInvitationFactory)
+from friendface.models import (FacebookApplication, FacebookAuthorization,
+                               FacebookUser, FacebookInvitation)
 from friendface.views import FacebookAppAuthMixin, FacebookPostAsGetMixin
-from friendface.fixtures import FacebookApplicationFactory
+
 
 TEST_USER = {
     'id': 12345678,
@@ -259,7 +265,8 @@ class FacebookApplicationMatchingTestCase(TestCase):
 
     def test_get_for_request_raises_exception_on_no_match(self):
         FacebookApplication.objects.update(canvas_url='foo',
-                                           secure_canvas_url='foo')
+                                           secure_canvas_url='foo',
+                                           website_url='/dashboard/')
         with self.assertRaises(FacebookApplication.DoesNotExist):
             FacebookApplication.get_for_request(self.request)
 
@@ -276,7 +283,7 @@ class ChannelViewTest(TestCase):
 
 class FacebookApplicationInstallRedirectViewTest(TestCase):
     def setUp(self):
-        self.app = FacebookApplicationFactory.create()
+        self.app = FacebookApplicationFactory.create(website_url='/dashboard/')
 
     def test_should_redirect_with_application_id_given(self):
         res = self.client.get(reverse('friendface.views.install',
@@ -306,3 +313,69 @@ class FacebookApplicationInstallRedirectViewTest(TestCase):
 
         self.assertEqual(res.status_code, 302)
         self.assertTrue('app_id={0}'.format(app.pk) in res.get('Location'))
+
+
+@patch.object(FacebookApplication, 'request')
+class FacebookInvitationMixinTest(TestCase):
+    URL = reverse('friendface.views.invitation_handler')
+
+    def setUp(self):
+        self.fb_user, self.user, self.app = create_user(True)
+        self.invitation = FacebookInvitationFactory.create(
+            application=self.app,
+            receiver=self.fb_user
+        )
+
+    def test_vanilla_authed_user_accept_invitation_that_doesnt_exist(self, _):
+        self.assertTrue(self.client.login(facebook_user=self.fb_user))
+        request_id = '123456'
+        res = self.client.get(self.URL, {'request_ids': request_id})
+
+        self.assertEqual(res.status_code, 200)
+        self.assertRaises(FacebookInvitation.DoesNotExist,
+                          FacebookInvitation.objects.get,
+                          request_id=request_id)
+
+    def test_vanilla_authed_user_accept_invitation(self, _):
+        self.assertTrue(self.client.login(facebook_user=self.fb_user))
+        res = self.client.get(self.URL, {
+            'request_ids': self.invitation.request_id
+        })
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(FacebookInvitation.objects
+                        .get(request_id=self.invitation.request_id)
+                        .accepted)
+
+    def test_accept_invitation_delete_from_facebook(self, mocked):
+        self.assertTrue(self.client.login(facebook_user=self.fb_user))
+        self.client.get(self.URL, {'request_ids': self.invitation.request_id})
+
+        mocked.assert_called_with(
+            '{0}_{1}'.format(self.invitation.request_id, self.fb_user.uid),
+            method='delete'
+        )
+
+    def test_accept_invitation_with_next_set(self, _):
+        self.assertTrue(self.client.login(facebook_user=self.fb_user))
+        url = 'http://www.google.com/'
+        self.invitation.next = url
+        self.invitation.save()
+
+        res = self.client.get(self.URL, {
+            'request_ids': self.invitation.request_id
+        })
+
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res.get('Location'), url)
+
+    def test_accept_invitation_when_not_authed(self, _):
+        '''An unauthed user should get redirected for authing while
+        keeping the request_ids in the next attribute.
+        '''
+        res = self.client.get(self.URL, {
+            'request_ids': self.invitation.request_id
+        })
+
+        self.assertEqual(res.status_code, 302)
+        self.assertTrue('request_ids' in res.get('Location'))
+        self.assertTrue(str(self.invitation.request_id) in res.get('Location'))

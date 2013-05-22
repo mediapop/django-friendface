@@ -1,6 +1,6 @@
 from django.conf.urls import patterns, include, url
 
-# from test.views import EmojiTestReplaceTagView
+from test.views import FacebookInvitationHandler
 from friendface.views import FacebookApplicationInstallRedirectView
 
 urlpatterns = patterns(
@@ -12,4 +12,6 @@ urlpatterns += patterns(
     'friendface.views',
     url('^install/$', FacebookApplicationInstallRedirectView.as_view(),
         name='friendface.views.install'),
+    url('^invitation-handler/$', FacebookInvitationHandler.as_view(),
+        name='friendface.views.invitation_handler'),
 )

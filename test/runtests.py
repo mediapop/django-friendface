@@ -23,7 +23,6 @@ settings.configure(
     ),
     STATIC_URL='/static/',
     # TEMPLATE_DIRS=(os.path.join(os.path.dirname(__file__), 'templates'),)
-
     MIDDLEWARE_CLASSES = (
         'django.middleware.common.CommonMiddleware',
         'django.middleware.csrf.CsrfViewMiddleware',
@@ -33,8 +32,11 @@ settings.configure(
         'friendface.middleware.FacebookDecodingMiddleware',
         'friendface.middleware.DisableCsrfProtectionOnDecodedSignedRequest',
         'friendface.middleware.FacebookSignedRequestAuthenticationMiddleware',
-    )
-
+    ),
+    AUTHENTICATION_BACKENDS = (
+        'friendface.auth.backends.FacebookBackend',
+        'django.contrib.auth.backends.ModelBackend'
+    ),
 )
 
 # from django.test.simple import DjangoTestSuiteRunner
