@@ -403,11 +403,17 @@ class LikeGateMixin(object):
         return self.like_gate_target
 
     def dispatch(self, request, *args, **kwargs):
+        self.request = request
+        self.args = args
+        self.kwargs = kwargs
+
         page = request.FACEBOOK.get('page', {})
         like_gate_target = self.get_like_gate_target()
         if(page and not page['liked']
            and (not like_gate_target or int(page['id']) == like_gate_target)):
-            return render(request, self.get_like_gate_template())
+            return render(request,
+                          self.get_like_gate_template(),
+                          self.get_context_data(**kwargs))
         elif like_gate_target and int(page.get('id', 0)) != like_gate_target:
             try:  # @todo Drop get_profile() for 1.5
                 facebook_user = request.user.get_profile().facebook
@@ -416,6 +422,8 @@ class LikeGateMixin(object):
                 raise ImproperlyConfigured("LikeGate with target must come "
                                            "after facebook auth.")
             if not facebook_user.has_liked(self.get_like_gate_target()):
-                return render(request, self.get_like_gate_template())
+                return render(request,
+                              self.get_like_gate_template(),
+                              self.get_context_data(**kwargs))
 
         return super(LikeGateMixin, self).dispatch(request, *args, **kwargs)
