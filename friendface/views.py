@@ -278,6 +278,7 @@ class FacebookInvitationMixin(object):
 
     def dispatch(self, request, *args, **kwargs):
         request_ids = request.GET.get('request_ids')
+
         if not request_ids:
             return super(FacebookInvitationMixin, self).dispatch(
                 request, *args, **kwargs
@@ -308,7 +309,7 @@ class FacebookInvitationMixin(object):
                 pass
 
         if next_url:
-            return redirect(next_url)
+            return redirectjs(next_url)
 
         return super(FacebookInvitationMixin, self).dispatch(
             request, *args, **kwargs
