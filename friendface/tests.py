@@ -373,9 +373,8 @@ class FacebookInvitationMixinTest(TestCase):
         res = self.client.get(self.URL, {
             'request_ids': self.invitation.request_id
         })
-
-        self.assertEqual(res.status_code, 302)
-        self.assertEqual(res.get('Location'), url)
+        self.assertTemplateUsed('js-redirect-to.html')
+        self.assertEqual(res.context['redirect_to'], url)
 
     def test_accept_invitation_when_not_authed(self, _):
         '''An unauthed user should get redirected for authing while
