@@ -202,12 +202,12 @@ class FacebookAppAuthMixin(object):
                 if(not facebook_user
                    or request.facebook != facebook_user.application):
                     raise ObjectDoesNotExist  # @todo Pick a better exception?
-
+            except ObjectDoesNotExist as e:
+                pass
+            else:
                 return super(FacebookAppAuthMixin, self).dispatch(request,
                                                                   *args,
                                                                   **kwargs)
-            except ObjectDoesNotExist:
-                pass
 
         auth_url = self.get_auth_url()
         return self.redirect(request.facebook.get_authorize_url(auth_url))
