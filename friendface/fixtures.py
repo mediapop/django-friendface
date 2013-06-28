@@ -20,8 +20,12 @@ def random_hex_string(length, max_length=None):
 
 def create_user(connect_user_with_app=False,
                 application=None,
-                application_kwargs={},
-                facebook_user_kwargs={}):
+                application_kwargs=None,
+                facebook_user_kwargs=None):
+    if not application_kwargs:
+        application_kwargs = {}
+    if not facebook_user_kwargs:
+        facebook_user_kwargs = {}
     if not application:
         application = FacebookApplicationFactory.create(**application_kwargs)
 
