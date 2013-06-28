@@ -14,7 +14,7 @@ from facebook import GraphAPI
 from mock import patch
 
 from friendface.fixtures import (create_user, FacebookApplicationFactory,
-                                 FacebookInvitationFactory)
+                                 FacebookInvitationFactory, FacebookPageFactory)
 from friendface.models import (FacebookApplication, FacebookAuthorization,
                                FacebookUser, FacebookInvitation)
 from friendface.views import FacebookAppAuthMixin, FacebookPostAsGetMixin
@@ -143,6 +143,18 @@ class FacebookPostAsGetMixinTestCase(TestCase):
                 return False
 
         self.assertTrue(TestView().dispatch(self.request))
+
+
+class FacebookPageTest(TestCase):
+    def setUp(self):
+        self.page = FacebookPageFactory.build()
+
+    def test_default_unicode_is_id(self):
+        self.assertEqual(unicode(self.page), unicode(self.page.id))
+
+    def test_unicode_name(self):
+        self.page.name = 'pancakes'
+        self.assertEqual(unicode(self.page), unicode(self.page.name))
 
 
 class FacebookAuthorizationMixinTestCase(TestCase):

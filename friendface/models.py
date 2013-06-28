@@ -504,7 +504,7 @@ class FacebookPage(models.Model):
         return "{0}pages/{1}/{2}".format(base_url, slugify(self.name), self.id)
 
     def __unicode__(self):
-        return self.name
+        return self.name or unicode(self.id)
 
 
 class PageAdmin(AccessTokenMixin, models.Model, FacebookRequestMixin):
