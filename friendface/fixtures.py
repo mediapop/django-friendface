@@ -91,8 +91,7 @@ class FacebookUserFactory(factory.DjangoModelFactory):
 
 class FacebookPageFactory(DontRunPreSaveMixin, factory.DjangoModelFactory):
     FACTORY_FOR = FacebookPage
-
-    id = factory.LazyAttribute(lambda _: 8 ** random.randrange(16, 20))
+    id = 1
 
 
 class PageAdminFactory(factory.DjangoModelFactory):
