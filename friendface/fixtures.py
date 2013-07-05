@@ -4,7 +4,7 @@ import random
 import factory
 from mock import Mock
 
-from .models import (FacebookUser, FacebookApplication,
+from .models import (FacebookApplication, FacebookInvitation, FacebookUser,
                      FacebookPage, PageAdmin)
 
 
@@ -20,8 +20,12 @@ def random_hex_string(length, max_length=None):
 
 def create_user(connect_user_with_app=False,
                 application=None,
-                application_kwargs={},
-                facebook_user_kwargs={}):
+                application_kwargs=None,
+                facebook_user_kwargs=None):
+    if not application_kwargs:
+        application_kwargs = {}
+    if not facebook_user_kwargs:
+        facebook_user_kwargs = {}
     if not application:
         application = FacebookApplicationFactory.create(**application_kwargs)
 
@@ -59,12 +63,12 @@ class FacebookApplicationFactory(DontRunPreSaveMixin,
                                  factory.DjangoModelFactory):
         FACTORY_FOR = FacebookApplication
 
-        id = factory.LazyAttribute(lambda _: 8 ** random.randrange(16, 20))
-        name = 'Test application for the greater good'
+        id = factory.Sequence(lambda n: (8 ** random.randrange(16, 20)) + n)
+        name = factory.Sequence(lambda n: 'Application {0}'.format(n))
         secret = factory.LazyAttribute(lambda x: random_hex_string(16, 32))
         default_scope = 'user_likes,email'
         namespace = 'fake-test-app'
-        website_url = 'http://testserver/dashboard/'
+        website_url = 'http://testserver/'
 
         @classmethod
         def _prepare(cls, create, **kwargs):
@@ -81,18 +85,17 @@ class FacebookApplicationFactory(DontRunPreSaveMixin,
 class FacebookUserFactory(factory.DjangoModelFactory):
     FACTORY_FOR = FacebookUser
 
-    uid = factory.LazyAttribute(lambda _: 8 ** random.randrange(16, 20))
+    uid = factory.Sequence(lambda n: (8 ** random.randrange(16, 20)) + n)
     first_name = 'Random user'
     last_name = factory.Sequence(lambda n: 'No. {}'.format(n))
     access_token = factory.LazyAttribute(lambda a: random_hex_string(50, 64))
-    application_id = 0  # Fake app unless someone overrides application
+    application = factory.SubFactory(FacebookApplicationFactory)
     email = factory.Sequence(lambda n: 'fake-user-{}'.format(n))
 
 
 class FacebookPageFactory(DontRunPreSaveMixin, factory.DjangoModelFactory):
     FACTORY_FOR = FacebookPage
-
-    id = factory.LazyAttribute(lambda _: 8 ** random.randrange(16, 20))
+    id = 1
 
 
 class PageAdminFactory(factory.DjangoModelFactory):
@@ -100,3 +103,19 @@ class PageAdminFactory(factory.DjangoModelFactory):
 
     user = factory.SubFactory(FacebookUserFactory)
     page = factory.SubFactory(FacebookPageFactory)
+
+
+class FacebookInvitationFactory(DontRunPreSaveMixin,
+                                factory.DjangoModelFactory):
+    FACTORY_FOR = FacebookInvitation
+
+    request_id = factory.Sequence(lambda n: 8 ** random.randrange(16, 20) + n)
+    application = factory.SubFactory(FacebookApplicationFactory)
+    sender = factory.SubFactory(
+        FacebookUserFactory,
+        application=factory.SelfAttribute('..application')
+    )
+    receiver = factory.SubFactory(
+        FacebookUserFactory,
+        application=factory.SelfAttribute('..application')
+    )

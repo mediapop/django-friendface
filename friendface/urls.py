@@ -13,8 +13,22 @@ urlpatterns = patterns('friendface.views',
     url(r'^install/(?P<application_id>\d+)/$', FacebookApplicationInstallRedirectView.as_view(), name='friendface.views.install'),
 )
 
-# Extra URLs to cover all views when testing.
+# Extra URLs to coverall views when testing.  This is ugly and should
+# dissapear, question is how to make sure normal django projects
+# doesn't run our test cases.
 if 'test' in sys.argv:
-    urlpatterns += patterns('friendface.views',
-        url('^install/$', FacebookApplicationInstallRedirectView.as_view(), name='friendface.views.install'),
+    from django.http import HttpResponse
+    from django.views.generic import View
+    from .views import FacebookHandleInvitationMixin
+
+    class FacebookInvitationHandler(FacebookHandleInvitationMixin, View):
+        def get(self, request, *args, **kwargs):
+            return HttpResponse('OK')
+
+    urlpatterns += patterns(
+        'friendface.views',
+        url('^install/$', FacebookApplicationInstallRedirectView.as_view(),
+            name='friendface.views.install'),
+        url('^invitation-handler/$', FacebookInvitationHandler.as_view(),
+            name='friendface.views.invitation_handler'),
     )

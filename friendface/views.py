@@ -150,12 +150,13 @@ class FacebookPostAsGetMixin(object):
 
 
 class MobileView(RedirectView):
-    """ If you set Facebooks mobile view to go here all fburl's will behave like
-    regular url."""
-    # @todo In the event that a users session drop, fburl will behave like
-    # normal. It should be possible to do something like url(r'/mobile/.*,)
-    # strip mobile, set the session var again and redirect the user to the right
-    # view.
+    """If you set Facebooks mobile view to go here all fburl's will
+    behave like regular url.
+    """
+    # @todo In the event that a users session drop, fburl will behave
+    # like normal. It should be possible to do something like
+    # url(r'/mobile/.*,) strip mobile, set the session var again and
+    # redirect the user to the right view.
     permanent = False
 
     def dispatch(self, request, *args, **kwargs):
@@ -170,6 +171,8 @@ class FacebookEnabledTemplateView(FacebookPostAsGetMixin, TemplateView):
 class FacebookAppAuthMixin(object):
     """ This will cause authentication that will go back to the canvas (if on
     facebook) or the page (request.FACEBOOK is not present)"""
+    # This is the URL that authentication should redirec to after user
+    # has authed successfully
     auth_url = ''
 
     def get_auth_url(self):
@@ -197,13 +200,13 @@ class FacebookAppAuthMixin(object):
                 facebook_user = request.user.get_profile().facebook
                 if(not facebook_user
                    or request.facebook != facebook_user.application):
-                    raise ObjectDoesNotExist # @todo Pick a better exception?
-
+                    raise ObjectDoesNotExist  # @todo Pick a better exception?
+            except ObjectDoesNotExist as e:
+                pass
+            else:
                 return super(FacebookAppAuthMixin, self).dispatch(request,
                                                                   *args,
                                                                   **kwargs)
-            except ObjectDoesNotExist:
-                pass
 
         auth_url = self.get_auth_url()
         return self.redirect(request.facebook.get_authorize_url(auth_url))
@@ -261,7 +264,12 @@ class FacebookApplicationInstallRedirectView(RedirectView):
 
 
 class FacebookInvitationMixin(object):
-    """ Handle Facebook Invitations directed towards the root canvas URL. """
+    """Handle Facebook Invitations directed towards the root canvas
+    URL. This mixin should be used together with `FacebookAppAuthMixin`
+    to handle unauthed users who accept a request.
+
+    Look at `FacebookHandleInvitationMixin` for that.
+    """
     # @todo Deleting the invitation objects could be pushed to celery.
     # @todo It can currently only delete similar invitation objects. If a user
     # has multiple invitation leading to different places, it would need to be
@@ -269,44 +277,49 @@ class FacebookInvitationMixin(object):
 
     def dispatch(self, request, *args, **kwargs):
         request_ids = request.GET.get('request_ids')
-        if not request_ids:
-            return super(FacebookInvitationMixin, self).dispatch(request,
-                                                                 *args,
-                                                                 **kwargs)
 
-        # Make sure the user is logged in, so we can read facebook invitation
-        # details.
-        if not request.user.is_authenticated() or \
-                not request.user.get_profile().facebook:
-            return super(FacebookInvitationMixin, self).dispatch(request,
-                                                                 *args,
-                                                                 **kwargs)
+        if not request_ids:
+            return super(FacebookInvitationMixin, self).dispatch(
+                request, *args, **kwargs
+            )
+
+        # If the user is not authenticated just return and let
+        # FacebookAppAuthMixin deal with getting us an authed user.
+        if(not request.user.is_authenticated()
+           or not request.user.get_profile().facebook):
+            return super(FacebookInvitationMixin, self).dispatch(
+                request, *args, **kwargs
+            )
 
         facebook_user = request.user.get_profile().facebook
-
         next_url = None
-
         for request_id in request_ids.split(','):
             try:
                 invitation = FacebookInvitation.objects.get(
                     request_id=request_id,
-                    receiver=facebook_user)
+                    receiver=facebook_user
+                )
                 invitation.accepted = timezone.now()
                 invitation.save()
-                if not invitation.next or next == invitation.next:
+
+                if invitation.next:
                     next_url = invitation.next
-                    request.facebook.request('%s_%s' % (invitation.request_id,
-                                                        facebook_user.uid),
-                                             method='delete')
             except FacebookInvitation.DoesNotExist:
                 pass
 
         if next_url:
-            return redirect(next_url)
+            return redirectjs(next_url)
 
-        return super(FacebookInvitationMixin, self).dispatch(request,
-                                                             *args,
-                                                             **kwargs)
+        return super(FacebookInvitationMixin, self).dispatch(
+            request, *args, **kwargs
+        )
+
+
+class FacebookHandleInvitationMixin(FacebookInvitationMixin,
+                                    FacebookAppAuthMixin):
+    '''Users accepting invitations and authing them if they're not
+    authed before the invitations get accepted.
+    '''
 
 
 class FacebookInvitationCreateView(View):
@@ -382,27 +395,35 @@ class LikeGateMixin(object):
     def get_like_gate_template(self):
         if not self.like_gate_template:
             raise ImproperlyConfigured(
-                "LikeGateMixin requires get_fan_gate_template to return a "
-                "template by being overridden or having like_gate_template set")
+                'LikeGateMixin requires get_fan_gate_template to be set '
+            )
         return self.like_gate_template
 
     def get_like_gate_target(self):
         return self.like_gate_target
 
     def dispatch(self, request, *args, **kwargs):
+        self.request = request
+        self.args = args
+        self.kwargs = kwargs
+
         page = request.FACEBOOK.get('page', {})
         like_gate_target = self.get_like_gate_target()
-        if page and not page['liked'] and (not like_gate_target or
-                     int(page['id']) == like_gate_target):
-            return render(request, self.get_like_gate_template())
+        if(page and not page['liked']
+           and (not like_gate_target or int(page['id']) == like_gate_target)):
+            return render(request,
+                          self.get_like_gate_template(),
+                          self.get_context_data(**kwargs))
         elif like_gate_target and int(page.get('id', 0)) != like_gate_target:
-            try: #@todo Drop get_profile() for 1.5
+            try:  # @todo Drop get_profile() for 1.5
                 facebook_user = request.user.get_profile().facebook
                 if facebook_user is None: raise ObjectDoesNotExist
             except ObjectDoesNotExist:
                 raise ImproperlyConfigured("LikeGate with target must come "
                                            "after facebook auth.")
             if not facebook_user.has_liked(self.get_like_gate_target()):
-                return render(request, self.get_like_gate_template())
+                return render(request,
+                              self.get_like_gate_template(),
+                              self.get_context_data(**kwargs))
 
         return super(LikeGateMixin, self).dispatch(request, *args, **kwargs)

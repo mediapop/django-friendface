@@ -419,6 +419,20 @@ class FacebookInvitation(models.Model):
     next = models.URLField(help_text=('By default the user gets sent to the '
                                       'application canvas page.'))
 
+    class Meta:
+        unique_together = ('request_id', 'receiver')
+
+    def _pre_save(self):
+        if self.accepted:
+            self.application.request(
+                '{0}_{1}'.format(self.request_id, self.receiver.uid),
+                method='delete'
+            )
+
+    def save(self, *args, **kwargs):
+        self._pre_save()
+        return super(FacebookInvitation, self).save(*args, **kwargs)
+
     @classmethod
     def create_with_receiver(cls, receiver, request_id, application, sender,
                              **kwargs):
@@ -445,9 +459,6 @@ class FacebookInvitation(models.Model):
             application=application,
             **kwargs
         )
-
-    class Meta:
-        unique_together = ('request_id', 'receiver')
 
     def __unicode__(self):
         return unicode(self.request_id)
@@ -497,7 +508,7 @@ class FacebookPage(models.Model):
         return "{0}pages/{1}/{2}".format(base_url, slugify(self.name), self.id)
 
     def __unicode__(self):
-        return self.name
+        return self.name or unicode(self.id)
 
 
 class PageAdmin(AccessTokenMixin, models.Model, FacebookRequestMixin):
