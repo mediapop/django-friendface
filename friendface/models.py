@@ -28,7 +28,7 @@ class FacebookRequestMixin(object):
         params = dict({'access_token': self.access_token}, **(args or {}))
 
         return requests.request(method, url,
-                                params=params, data=post_args).json
+                                params=params, data=post_args).json()
 
     def fql(self, query):
         return self.request('fql', {'q': query})
@@ -105,7 +105,7 @@ class FacebookUser(AccessTokenMixin, models.Model, FacebookRequestMixin):
         if app_access_token is None:
             app_access_token = self.application.access_token
 
-        r = requests.post(
+        response = requests.post(
             'https://graph.facebook.com/{0}/notifications'.format(self.uid),
             params={
                 'access_token': app_access_token,
@@ -114,7 +114,7 @@ class FacebookUser(AccessTokenMixin, models.Model, FacebookRequestMixin):
                 'ref': ref
             })
 
-        return r.json
+        return response.json()
 
     def get_long_lived_access_token(self):
         '''
