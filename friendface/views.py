@@ -276,6 +276,12 @@ class FacebookInvitationMixin(object):
     # has multiple invitation leading to different places, it would need to be
     # dealt with individually.
 
+    def handle_invitation(self, invitation):
+        '''To be able to add custom logic after an invitation has been
+        accepted. An invitation object sent in for further logic.
+        '''
+        pass
+
     def dispatch(self, request, *args, **kwargs):
         request_ids = request.GET.get('request_ids')
 
@@ -307,6 +313,8 @@ class FacebookInvitationMixin(object):
                     next_url = invitation.next
             except FacebookInvitation.DoesNotExist:
                 pass
+            else:
+                self.handle_invitation(invitation)
 
         if next_url:
             return redirectjs(next_url)

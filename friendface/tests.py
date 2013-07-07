@@ -367,6 +367,17 @@ class FacebookInvitationMixinTest(TestCase):
                         .get(request_id=self.invitation.request_id)
                         .accepted)
 
+    def test_vanilla_authed_accept_calls_handle_invitation(self, _):
+        self.assertTrue(self.client.login(facebook_user=self.fb_user))
+        res = self.client.get(self.URL, {
+            'request_ids': self.invitation.request_id
+        })
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue('Handle invitation called' in res.content)
+        self.assertTrue(FacebookInvitation.objects
+                        .get(request_id=self.invitation.request_id)
+                        .accepted)
+
     def test_accept_invitation_delete_from_facebook(self, mocked):
         self.assertTrue(self.client.login(facebook_user=self.fb_user))
         self.client.get(self.URL, {'request_ids': self.invitation.request_id})
