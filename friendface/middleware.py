@@ -1,60 +1,69 @@
-from django.contrib.auth import authenticate, login, logout
-from friendface.models import FacebookApplication
+from django.contrib.auth import authenticate, login
+from friendface.models import FacebookApplication, FacebookPage
 from django.middleware.csrf import _get_new_csrf_key
 from friendface.models import FacebookUser
+from friendface.utils import memoize
 
 
-class P3PMiddleware(object):
-    def process_response(self, request, response):
-        response['P3P'] = ("Nonsense https://support.google.com/accounts/bin/"
-                           "answer.py?hl=en&answer=151657")
-        return response
+class FacebookContext(object):
+    def __init__(self, request):
+        self.django_request = request
+
+    @memoize
+    def application(self):
+        return FacebookApplication.get_for_request(self.request)
+
+    @memoize
+    def user(self):
+        # If we have a user_id in the request:
+        # 1. Attempt to get the user.
+        # 2. If the user doesn't exist. Log the current user out.
+        application = self.application()
+
+        if (self.request() or {}).get('user_id'):
+            user_id = self.request().get('user_id')
+            try:
+                user = application.facebookuser_set.get(uid=user_id)
+            except FacebookUser.DoesNotExist:
+                pass
+            else:
+                # This facebook user has a user already, log the current one
+                # out.
+                authenticated_user = authenticate(facebook_user=user)
+                if authenticated_user and authenticated_user.is_active:
+                    login(self.django_request, authenticated_user)
+
+                return user
+
+        return self.application().facebookuser_set.get(
+            user=self.request.user
+        )
+
+    @memoize
+    def request(self):
+        request = self.django_request.POST.get('signed_request')
+        if not request:
+            return self.application().decode(request)
 
 
-class FacebookApplicationMiddleware(object):
+    @memoize
+    def page(self):
+        page_id = (self.request() or {}).get('page').get('id')
+        if page_id:
+            return FacebookPage.objects.get(pk=page_id)
+
+
+class FacebookMiddleware(object):
     def process_request(self, request):
-        try:
-            application = FacebookApplication.get_for_request(request)
-            setattr(request, 'facebook', application)
-        except FacebookApplication.DoesNotExist:
-            pass
+        setattr(request, 'facebook', FacebookContext(request))
 
-
-class FacebookDecodingMiddleware(object):
-    def process_request(self, request):
-        #@todo This could use a middleware that finds the FacebookApplication
-        # based on which application can decode signed_request
-        signed_request = request.POST.get('signed_request')
-        if hasattr(request, 'facebook') and signed_request:
-            decoded = request.facebook.decode(signed_request) or {}
-            setattr(request, 'FACEBOOK', decoded)
-        else:
-            setattr(request, 'FACEBOOK', {})
-
-
-class DisableCsrfProtectionOnDecodedSignedRequest(object):
-    def process_request(self, request):
-        """
-        If we are getting a POST that results in a decoded signed_request
-        we shouldn't do CSRF protection. This is really so that we do not
-        need to do @csrf_exempt on all views that interacts with Facebook.
-        """
-        if request.FACEBOOK:
-            request.META["CSRF_COOKIE"] = _get_new_csrf_key()
+        # Disable CSRF protection for requests originating from facebook.
+        if request.facebook.request():
+            request.facebook.META['CSRF_COOKIE'] = _get_new_csrf_key()
             request.csrf_processing_done = True
 
-
-class FacebookSignedRequestAuthenticationMiddleware(object):
-    """If a signed_request has been decoded this will log that user in."""
-    def process_request(self, request):
-        if hasattr(request, 'FACEBOOK') and 'user_id' in request.FACEBOOK:
-            user_id = request.FACEBOOK['user_id']
-            app = request.facebook
-            try:
-                facebook_user = app.facebookuser_set.get(uid=user_id)
-            except FacebookUser.DoesNotExist:
-                return logout(request)
-            else:
-                authenticated_user = authenticate(facebook_user=facebook_user)
-                if authenticated_user and authenticated_user.is_active:
-                    login(request, authenticated_user)
+    def process_response(self, request, response):
+        if 'P3P' in response:
+            response['P3P'] = ("Nonsense https://support.google.com/accounts/"
+                               "bin/answer.py?hl=en&answer=151657")
+        return response

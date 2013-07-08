@@ -4,62 +4,58 @@ Django-friendface is a django application for interacting with Facebook. The
 goal is to have a complete implementation Facebook's API's in a django centric
 fashion and to support projects that have multiple Facebook Applications.
 
-## Setup
+## Contextual
+
+* Is contextual and knows which application should be used with the currrent
+request.
+* Auto-create Django users on auth.
+* Disables CSRF forgery on canvas URL's
+* Sends P3P headers.
+
+
+# Setup
 
     INSTALLED_APPS += ('friendface',)
+
+    MIDDLEWARE_CLASSES = (
+        'friendface.middleware.FacebookMiddleware',
+        ...
+    )
+
+    AUTHENTICATION_BACKENDS += ('friendface.auth.backends.FacebookBackend',)
 
     Each application you want to use you need to setup in the django admin.
     Once saved the application will request all of its details from Facebook.
 
+
 # Usage
+
+## Django
+
+django-friendface is attaches a facebook property to your request object.
+
+### request.facebook.application
+
+The facebook application for this request.
+
+### request.facebook.user
+
+The facebook user.
+
+### request.facebook.request
+
+The decoded signed request.
+
+### request.facebook.page
+
+FacebookPage instance.
+
+## Templates
 
     {% load facebook %}
 
     <a href="{% fburl 'my_app.views.index' %}">My view on Facebook!</a>
 
-### Authentication
-
-    AUTHENTICATION_BACKENDS += ('friendface.auth.backends.FacebookBackend',)
-
-This will cause newly authenticated users to also create a regular Django user.
-Django will link to FacebookUser to the Users profile as `facebook`. This means
-that there needs to be a Profile on the User object.
-
-    class Profile(models.Model):
-        user = models.OneToOneField('contrib.auth.User')
-        facebook = models.OneToOneField('friendface.FacebookUser',
-                                        null=True,
-                                        blank=True)
-
-
-### Facebook Middlewares
-
-    MIDDLEWARE_CLASSES += (
-        'friendface.middleware.FacebookApplicationMiddleware',
-        'friendface.middleware.FacebookDecodingMiddleware',
-        'friendface.middleware.DisableCsrfProtectionOnDecodedSignedRequest',
-        'friendface.middleware.FacebookSignedRequestAuthenticationMiddleware',
-    )
-
-#### FacebookApplicationMiddleware
-
-Matches your request path with the Facebook
-applications paths and loads that application. If there's more than one
-application with the same path it will pick the most exact match (i.e. the
-shorter URL.) and set the `facebook_application` on the `request`.
-
-    def my_fancy_view(request):
-        app = request.facebook_application
-        response = app.request('http://www.mediapop.co')
-        return HttpResponse(response['shares'])
-
-#### FacebookDecodingMiddleware
-
-Decodes the `signed_request` and makes it accessible via `request.FACEBOOK`
-
-#### FacebookSignedRequestAuthenticationMiddleware
-
-Reads the `user_id` from a decoded request and signs that user in.
 
 #### To run test suite
 friendface is prepared for testing both it's Javascript and Python components.

@@ -55,6 +55,7 @@ class AccessTokenMixin(models.Model):
 
 
 class FacebookUser(AccessTokenMixin, models.Model, FacebookRequestMixin):
+    user = models.ForeignKey('auth.User', null=True, blank=True)
     created = models.DateTimeField(auto_now_add=True)
     uid = models.BigIntegerField()
     application = models.ForeignKey('FacebookApplication')

@@ -8,10 +8,7 @@ class FacebookBackend(object):
     """
     def authenticate(self, facebook_user):
         assert(isinstance(facebook_user, FacebookUser))
-        try:
-            return User.objects.get(facebook_user=facebook_user)
-        except User.DoesNotExist:
-            return None
+        return facebook_user.user
 
     def get_user(self, user_id):
         try:
