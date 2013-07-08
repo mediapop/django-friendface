@@ -373,7 +373,7 @@ class FacebookInvitationMixinTest(TestCase):
             'request_ids': self.invitation.request_id
         })
         self.assertEqual(res.status_code, 200)
-        self.assertTrue('Handle invitation called' in res.content)
+        self.assertTrue('Handle invitation called' in res.content, res.content)
         self.assertTrue(FacebookInvitation.objects
                         .get(request_id=self.invitation.request_id)
                         .accepted)
