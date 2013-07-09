@@ -47,6 +47,12 @@ class DisableCsrfProtectionOnDecodedSignedRequest(object):
 class FacebookSignedRequestAuthenticationMiddleware(object):
     """If a signed_request has been decoded this will log that user in."""
     def process_request(self, request):
+        # Safari doesn't set third party cookies, so we shouldn't authenticate
+        # users that don't have cookies, as the logged in user won't be visible
+        # in future AJAX calls.
+        if not request.COOKIES:
+            return
+
         if hasattr(request, 'FACEBOOK') and 'user_id' in request.FACEBOOK:
             user_id = request.FACEBOOK['user_id']
             app = request.facebook
