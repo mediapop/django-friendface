@@ -304,7 +304,8 @@ class FacebookInvitationMixin(object):
             try:
                 invitation = FacebookInvitation.objects.get(
                     request_id=request_id,
-                    receiver=facebook_user
+                    receiver=facebook_user,
+                    accepted=None
                 )
                 invitation.accepted = timezone.now()
                 invitation.save()
