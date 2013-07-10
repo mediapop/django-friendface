@@ -122,14 +122,20 @@ def record_facebook_invitation(request):
     if not request_id: return HttpResponseBadRequest('No request set.')
 
     profile = request.user.get_profile()
-    application = profile.facebook.application
+    fb_user = profile.facebook
+    if not fb_user:
+        HttpResponse(json.dumps({'result': 'error',
+                                 'error': 'no friendface user'}),
+                     content_type='application/json',
+                     status=403)
+    application = fb_user.application
 
     for recipient in request.POST.getlist('to[]'):
         FacebookInvitation.create_with_receiver(
             receiver=recipient,
             request_id=request_id,
             application=application,
-            sender=profile.facebook,
+            sender=fb_user,
             next=request.POST.get('next', ''))
 
     return HttpResponse(json.dumps({'result': 'ok'}),
@@ -359,10 +365,11 @@ class FacebookInvitationCreateView(View):
         context = {}
         request = self.request.POST.get('request')
         if not request: raise ValueError('No request id specified')
+        fb_user = self.request.user.get_profile().facebook
 
         context.update({
             'request_id': request,
-            'sender': self.request.user.get_profile().facebook,
+            'sender': fb_user,
             'application': self.request.facebook,
             'next': self.request.POST.get('next', ''),
             'invitations': []
