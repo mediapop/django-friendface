@@ -159,12 +159,31 @@ class FacebookPostAsGetMixin(object):
 class MobileView(RedirectView):
     """If you set Facebooks mobile view to go here all fburl's will
     behave like regular url.
+
+    To use install it in your urls.py as:
+
+        url(r'^mobile/', MobileView.as_view(), name='mobile')
+
+    It automatically replaces the string 'mobile/' with '' and then
+    redirects the user to that page.
     """
-    # @todo In the event that a users session drop, fburl will behave
-    # like normal. It should be possible to do something like
-    # url(r'/mobile/.*,) strip mobile, set the session var again and
-    # redirect the user to the right view.
+    redirect_url = None
     permanent = False
+    mobile_prefix = 'mobile/'
+    replacement_string = ''
+
+    def get_mobile_prefix(self):
+        return self.mobile_prefix
+
+    def get_replacement_string(self):
+        return self.replacement_string
+
+    def get_redirect_url(self):
+        if self.redirect_url:
+            return self.redirect_url
+        else:
+            return self.request.path.replace(self.get_mobile_prefix(),
+                                             self.get_replacement_string())
 
     def dispatch(self, request, *args, **kwargs):
         request.session['is_facebook_mobile'] = True
