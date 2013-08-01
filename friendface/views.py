@@ -53,8 +53,8 @@ def authorized(request, authorization_id):
         username = "".join(random.choice(BASE62_ALPHABET) for i in xrange(30))
         user = User.objects.create_user(username=username,
                                         email=facebook_user.email)
-        user.first_name = facebook_user.first_name
-        user.last_name = facebook_user.last_name
+        user.first_name = facebook_user.first_name[0:30]
+        user.last_name = facebook_user.last_name[0:30]
         user.set_unusable_password()
         user.save()
 

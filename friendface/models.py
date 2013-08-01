@@ -381,6 +381,23 @@ class FacebookApplication(AccessTokenMixin, models.Model,
                                       href=href,
                                       ref=ref)
 
+    def create_test_user(self, installed=True, locale='en_US',
+                         name=None, permissions=None):
+        return self.request('{0}/accounts/test-users'.format(self.pk), args={
+            'installed': installed,
+            'name': name or '',
+            'locale': locale,
+            'permissions': permissions or '',
+            'access_token': self.access_token,
+            'method': 'post',
+        })
+
+    def delete_test_user(self, user_id):
+        return self.request(user_id, args={
+            'method': 'delete',
+            'access_token': self.access_token,
+        })
+
 
 class FacebookTab(models.Model):
     """In this case we should only ever have one FacebookTab, but I'm setting
