@@ -146,6 +146,12 @@ def record_facebook_invitation(request):
 class FacebookPostAsGetMixin(object):
     """ Treat facebook requests with a decoded signed_request as GET. """
     def dispatch(self, request, *args, **kwargs):
+        # Mobile seems to keep being dropped, so add in a little extra when
+        # redirecting and hope that it sticks
+        mobile = request.GET.get('mobile')
+        if mobile and mobile.lower() == 'true':
+            request.session['is_facebook_mobile'] = True
+
         if request.FACEBOOK:
             if not hasattr(self, 'get'):
                 raise ImproperlyConfigured("FacebookPostAsGetMixin needs a "
@@ -180,10 +186,15 @@ class MobileView(RedirectView):
 
     def get_redirect_url(self):
         if self.redirect_url:
-            return self.redirect_url
+            url = self.redirect_url
         else:
-            return self.request.path.replace(self.get_mobile_prefix(),
-                                             self.get_replacement_string())
+            url = self.request.path.replace(self.get_mobile_prefix(),
+                                            self.get_replacement_string())
+
+        return '{0}{1}mobile=true'.format(
+            url,
+            '&' if '?' in url else '?'
+        )
 
     def dispatch(self, request, *args, **kwargs):
         request.session['is_facebook_mobile'] = True
@@ -205,8 +216,9 @@ class FacebookAppAuthMixin(object):
         if self.auth_url:
             return self.auth_url
 
+        session = getattr(self.request, 'session')
         if(self.request.FACEBOOK
-           and not self.request.session.get('is_facebook_mobile', False)):
+           and not (session and not session.get('is_facebook_mobile', False))):
             return self.request.facebook.build_canvas_url(
                 self.request.get_full_path()
             )
