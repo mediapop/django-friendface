@@ -205,7 +205,8 @@ class FacebookAppAuthMixin(object):
         if self.auth_url:
             return self.auth_url
 
-        if self.request.FACEBOOK:
+        if(self.request.FACEBOOK
+           and not self.request.session.get('is_facebook_mobile', False)):
             return self.request.facebook.build_canvas_url(
                 self.request.get_full_path()
             )
