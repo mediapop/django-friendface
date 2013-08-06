@@ -66,7 +66,7 @@ def authorized(request, authorization_id):
         except SiteProfileNotAvailable:
             user.delete()
 
-    if not authenticated_user is None:
+    if authenticated_user is not None:
         if authenticated_user.is_active:
             login(request, authenticated_user)
             #@todo handle user not active.
