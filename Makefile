@@ -2,6 +2,9 @@ PHANTOMJS=$(CURDIR)/node_modules/.bin/mocha-phantomjs
 
 .PHONY : test clean test-py test-js
 
+develop:
+	pip install -q -e .
+
 default: coverage
 
 test-py:
