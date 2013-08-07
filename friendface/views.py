@@ -51,8 +51,8 @@ def authorized(request, authorization_id):
         username = "".join(random.choice(BASE62_ALPHABET) for i in xrange(30))
         user = User.objects.create_user(username=username,
                                         email=facebook_user.email)
-        user.first_name = request_data['first_name']
-        user.last_name = request_data['last_name']
+        user.first_name = facebook_user.first_name[0:30]
+        user.last_name = facebook_user.last_name[0:30]
         user.set_unusable_password()
         facebook_user.user = user
         user.save()
@@ -63,7 +63,7 @@ def authorized(request, authorization_id):
 
     authenticated_user = authenticate(facebook_user=facebook_user)
 
-    if not authenticated_user is None:
+    if authenticated_user is not None:
         if authenticated_user.is_active:
             login(request, authenticated_user)
             #@todo handle user not active.
@@ -118,17 +118,20 @@ def record_facebook_invitation(request):
     request_id = request.POST.get('request')
     if not request_id:
         return HttpResponseBadRequest('No request set.')
-
-    application = request.facebook
-    facebook_user = request.facebook_user
-    request.facebook.facebookusers.get(user=request.user)
+    try:
+        request.facebook.user
+    except FacebookUser.DoesNotExist:
+        HttpResponse(json.dumps({'result': 'error',
+                                 'error': 'no friendface user'}),
+                     content_type='application/json',
+                     status=403)
 
     for recipient in request.POST.getlist('to[]'):
         FacebookInvitation.create_with_receiver(
             receiver=recipient,
             request_id=request_id,
-            application=application,
-            sender=request.user.facebook,
+            application=request.facebook.application,
+            sender=request.facebook.user,
             next=request.POST.get('next', ''))
 
     return HttpResponse(json.dumps({'result': 'ok'}),
@@ -139,6 +142,12 @@ def record_facebook_invitation(request):
 class FacebookPostAsGetMixin(object):
     """ Treat facebook requests with a decoded signed_request as GET. """
     def dispatch(self, request, *args, **kwargs):
+        # Mobile seems to keep being dropped, so add in a little extra when
+        # redirecting and hope that it sticks
+        mobile = request.GET.get('mobile')
+        if mobile and mobile.lower() == 'true':
+            request.session['is_facebook_mobile'] = True
+
         if request.FACEBOOK:
             if not hasattr(self, 'get'):
                 raise ImproperlyConfigured("FacebookPostAsGetMixin needs a "
@@ -152,12 +161,36 @@ class FacebookPostAsGetMixin(object):
 class MobileView(RedirectView):
     """If you set Facebooks mobile view to go here all fburl's will
     behave like regular url.
+
+    To use install it in your urls.py as:
+
+        url(r'^mobile/', MobileView.as_view(), name='mobile')
+
+    It automatically replaces the string 'mobile/' with '' and then
+    redirects the user to that page.
     """
-    # @todo In the event that a users session drop, fburl will behave
-    # like normal. It should be possible to do something like
-    # url(r'/mobile/.*,) strip mobile, set the session var again and
-    # redirect the user to the right view.
+    redirect_url = None
     permanent = False
+    mobile_prefix = 'mobile/'
+    replacement_string = ''
+
+    def get_mobile_prefix(self):
+        return self.mobile_prefix
+
+    def get_replacement_string(self):
+        return self.replacement_string
+
+    def get_redirect_url(self):
+        if self.redirect_url:
+            url = self.redirect_url
+        else:
+            url = self.request.path.replace(self.get_mobile_prefix(),
+                                            self.get_replacement_string())
+
+        return '{0}{1}mobile=true'.format(
+            url,
+            '&' if '?' in url else '?'
+        )
 
     def dispatch(self, request, *args, **kwargs):
         request.session['is_facebook_mobile'] = True
@@ -179,7 +212,9 @@ class FacebookAppAuthMixin(object):
         if self.auth_url:
             return self.auth_url
 
-        if self.request.FACEBOOK:
+        session = getattr(self.request, 'session', False)
+        if(self.request.FACEBOOK
+           and not (session and not session.get('is_facebook_mobile', False))):
             return self.request.facebook.build_canvas_url(
                 self.request.get_full_path()
             )
@@ -275,6 +310,12 @@ class FacebookInvitationMixin(object):
     # has multiple invitation leading to different places, it would need to be
     # dealt with individually.
 
+    def handle_invitation(self, invitation):
+        '''To be able to add custom logic after an invitation has been
+        accepted. An invitation object sent in for further logic.
+        '''
+        pass
+
     def dispatch(self, request, *args, **kwargs):
         request_ids = request.GET.get('request_ids')
 
@@ -297,7 +338,8 @@ class FacebookInvitationMixin(object):
             try:
                 invitation = FacebookInvitation.objects.get(
                     request_id=request_id,
-                    receiver=facebook_user
+                    receiver=facebook_user,
+                    accepted=None
                 )
                 invitation.accepted = timezone.now()
                 invitation.save()
@@ -306,6 +348,8 @@ class FacebookInvitationMixin(object):
                     next_url = invitation.next
             except FacebookInvitation.DoesNotExist:
                 pass
+            else:
+                self.handle_invitation(invitation)
 
         if next_url:
             return redirectjs(next_url)
@@ -349,10 +393,11 @@ class FacebookInvitationCreateView(View):
         context = {}
         request = self.request.POST.get('request')
         if not request: raise ValueError('No request id specified')
+        fb_user = self.request.user.get_profile().facebook
 
         context.update({
             'request_id': request,
-            'sender': self.request.user.get_profile().facebook,
+            'sender': fb_user,
             'application': self.request.facebook,
             'next': self.request.POST.get('next', ''),
             'invitations': []

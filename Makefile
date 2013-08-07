@@ -21,7 +21,7 @@ coverage-py:
 	coverage run test/runtests.py --with-xunit && \
 		coverage xml --omit="admin.py,*.virtualenvs/*,./test/*"
 
-coverage-js:
+coverage-js: node_modules
 	$(PHANTOMJS) -R xunit test/tests.html > mochatests.xml
 
 coverage-py-html:

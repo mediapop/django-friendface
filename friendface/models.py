@@ -28,7 +28,7 @@ class FacebookRequestMixin(object):
         params = dict({'access_token': self.access_token}, **(args or {}))
 
         return requests.request(method, url,
-                                params=params, data=post_args).json
+                                params=params, data=post_args).json()
 
     def fql(self, query):
         return self.request('fql', {'q': query})
@@ -110,7 +110,7 @@ class FacebookUser(AccessTokenMixin, models.Model, FacebookRequestMixin):
         if app_access_token is None:
             app_access_token = self.application.access_token
 
-        r = requests.post(
+        response = requests.post(
             'https://graph.facebook.com/{0}/notifications'.format(self.uid),
             params={
                 'access_token': app_access_token,
@@ -119,7 +119,7 @@ class FacebookUser(AccessTokenMixin, models.Model, FacebookRequestMixin):
                 'ref': ref
             })
 
-        return r.json
+        return response.json()
 
     def get_long_lived_access_token(self):
         '''
@@ -385,6 +385,23 @@ class FacebookApplication(AccessTokenMixin, models.Model,
                                       app_access_token=self.access_token,
                                       href=href,
                                       ref=ref)
+
+    def create_test_user(self, installed=True, locale='en_US',
+                         name=None, permissions=None):
+        return self.request('{0}/accounts/test-users'.format(self.pk), args={
+            'installed': installed,
+            'name': name or '',
+            'locale': locale,
+            'permissions': permissions or '',
+            'access_token': self.access_token,
+            'method': 'post',
+        })
+
+    def delete_test_user(self, user_id):
+        return self.request(user_id, args={
+            'method': 'delete',
+            'access_token': self.access_token,
+        })
 
 
 class FacebookTab(models.Model):

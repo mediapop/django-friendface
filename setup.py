@@ -12,7 +12,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='django-friendface',
-    version='0.2.4',
+    version='0.2.5',
     author='Kit Sunde',
     author_email='kit@mediapop.co',
     url='http://github.com/mediapop/django-friendface',
@@ -23,10 +23,10 @@ setup(
     install_requires=[
         # This seem to install from a different source, why?
         #'facebook-sdk==0.3.0',
-        'requests==0.14.0',
-        'mock==1.0.1',
-        'django-model-utils==1.1.0',
-        'factory-boy==2.0.2',
+        'requests>=1.0',
+        'mock',
+        'django-model-utils',
+        'factory-boy',
     ],
     dependency_links = [
         #'git+git://github.com/Celc/facebook-sdk.git#egg=facebook-sdk',

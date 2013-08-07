@@ -33,12 +33,9 @@ def create_user(connect_user_with_app=False,
     if connect_user_with_app: fb_user.application = application
     fb_user.save()
 
-    user = User.objects.create_user(username=random_hex_string(15),
-                                    email=fb_user.email)
-    user.first_name = fb_user.first_name
-    user.last_name = fb_user.last_name
-    user.set_unusable_password()
-    user.save()
+    user = UserFactory.create(email=fb_user.email,
+                              first_name=fb_user.first_name,
+                              last_name=fb_user.last_name)
 
     profile = user.get_profile()
     profile.facebook = fb_user
@@ -82,6 +79,27 @@ class FacebookApplicationFactory(DontRunPreSaveMixin,
                     ._prepare(create, **kwargs))
 
 
+class UserFactory(factory.DjangoModelFactory):
+    FACTORY_FOR = User
+
+    username = factory.Sequence(
+        lambda n: '{0}-{1}'.format(n, random_hex_string(20))
+    )
+    email = factory.Sequence(
+        lambda n: 'user-account-{0}@example.com'.format(n)
+    )
+
+    @classmethod
+    def _prepare(cls, create, **kwargs):
+        user = super(UserFactory, cls)._prepare(False, **kwargs)
+        user.set_unusable_password()
+
+        if create:
+            user.save()
+
+        return user
+
+
 class FacebookUserFactory(factory.DjangoModelFactory):
     FACTORY_FOR = FacebookUser
 
@@ -91,6 +109,16 @@ class FacebookUserFactory(factory.DjangoModelFactory):
     access_token = factory.LazyAttribute(lambda a: random_hex_string(50, 64))
     application = factory.SubFactory(FacebookApplicationFactory)
     email = factory.Sequence(lambda n: 'fake-user-{}'.format(n))
+
+    @classmethod
+    def _prepare(cls, create, **kwargs):
+        user = super(FacebookUserFactory, cls)._prepare(False, **kwargs)
+        user.send_notification = Mock(return_value=True)
+
+        if create:
+            user.save()
+
+        return user
 
 
 class FacebookPageFactory(DontRunPreSaveMixin, factory.DjangoModelFactory):

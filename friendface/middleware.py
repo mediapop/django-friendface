@@ -20,7 +20,10 @@ class FacebookContext(object):
         # 2. If the user doesn't exist. Log the current user out.
         application = self.application()
 
-        if (self.request() or {}).get('user_id'):
+        # Safari doesn't set third party cookies, so we shouldn't authenticate
+        # users that don't have cookies, as the logged in user won't be visible
+        # in future AJAX calls.
+        if self.django_request.COOKIES and (self.request() or {}).get('user_id'):
             user_id = self.request().get('user_id')
             try:
                 user = application.facebookuser_set.get(uid=user_id)
@@ -34,10 +37,12 @@ class FacebookContext(object):
                     login(self.django_request, authenticated_user)
 
                 return user
-
-        return self.application().facebookuser_set.get(
-            user=self.request.user
-        )
+        try:
+            return self.application().facebookuser_set.get(
+                user=self.request.user
+            )
+        except FacebookUser.DoesNotExist:
+            return None
 
     @memoize
     def request(self):
