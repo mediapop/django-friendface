@@ -1,4 +1,3 @@
-import os
 import sys
 from django.conf import settings
 
@@ -21,9 +20,9 @@ settings.configure(
         'test.accounts',
         'friendface',
     ),
+    NOSE_ARGS=['--verbosity=0', '--nocapture'],
     STATIC_URL='/static/',
-    # TEMPLATE_DIRS=(os.path.join(os.path.dirname(__file__), 'templates'),)
-    MIDDLEWARE_CLASSES = (
+    MIDDLEWARE_CLASSES=(
         'django.middleware.common.CommonMiddleware',
         'django.middleware.csrf.CsrfViewMiddleware',
         'django.contrib.sessions.middleware.SessionMiddleware',
@@ -33,7 +32,7 @@ settings.configure(
         'friendface.middleware.DisableCsrfProtectionOnDecodedSignedRequest',
         'friendface.middleware.FacebookSignedRequestAuthenticationMiddleware',
     ),
-    AUTHENTICATION_BACKENDS = (
+    AUTHENTICATION_BACKENDS=(
         'friendface.auth.backends.FacebookBackend',
         'django.contrib.auth.backends.ModelBackend'
     ),
@@ -42,6 +41,7 @@ settings.configure(
 # from django.test.simple import DjangoTestSuiteRunner
 # test_runner = DjangoTestSuiteRunner(verbosity=1)
 from django_nose import NoseTestSuiteRunner
+
 test_runner = NoseTestSuiteRunner()
 failures = test_runner.run_tests(['friendface', ])
 if failures:

@@ -34,6 +34,24 @@ class PyTest(TestCommand):
         # https://nose2.readthedocs.org/en/latest/differences.html#limited-support-for-python-setup-py-test
         import test.runtests
 
+install_requires = [
+    'facebook-sdk',
+    'requests>=1.0.0',
+    'pytz',
+    'django-model-utils',
+    'django>=1.4,<1.5',
+]
+
+tests_requires = [
+    'mock',
+    'django>=1.4,<1.5',
+    'nose',
+    'django-nose',
+    'factory-boy',
+    'coverage',
+]
+
+
 setup(
     name='django-friendface',
     version='0.2.5',
@@ -44,16 +62,10 @@ setup(
     long_description=__doc__,
     packages=find_packages(),
     zip_safe=False,
-    install_requires=[
-        # This seem to install from a different source, why?
-        #'facebook-sdk==0.3.0',
-        'requests>=1.0',
-        'mock',
-        'django-model-utils',
-        'factory-boy',
-    ],
+    install_requires=install_requires,
+    extras_require={'tests': tests_requires},
     dependency_links = [
-        #'git+git://github.com/Celc/facebook-sdk.git#egg=facebook-sdk',
+        'https://github.com/Celc/facebook-sdk/tarball/master#egg=facebook-sdk',
     ],
     cmdclass={'test': PyTest},
     include_package_data=True,
