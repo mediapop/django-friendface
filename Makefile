@@ -5,7 +5,7 @@ PHANTOMJS=$(CURDIR)/node_modules/.bin/mocha-phantomjs
 default: coverage
 
 test-py:
-	python test/runtests.py
+	python setup.py test
 
 test-js: node_modules
 	$(PHANTOMJS) -R tap test/tests.html

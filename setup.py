@@ -9,6 +9,30 @@ and to support projects that have multiple Facebook Applications.
 """
 
 from setuptools import setup, find_packages
+from setuptools.command.test import test as TestCommand
+
+# Hack to prevent stupid "TypeError: 'NoneType' object is not callable" error
+# in multiprocessing/util.py _exit_function when running `python
+# setup.py test` (see
+# http://www.eby-sarna.com/pipermail/peak/2010-May/003357.html)
+for m in ('multiprocessing', 'billiard'):
+    try:
+        __import__(m)
+    except ImportError:
+        pass
+
+
+class PyTest(TestCommand):
+    def finalize_options(self):
+        self.verbose = False
+        TestCommand.finalize_options(self)
+        self.test_args = []
+        self.test_suite = True
+
+    def run_tests(self):
+        # nose2 has limited support for setup.py test
+        # https://nose2.readthedocs.org/en/latest/differences.html#limited-support-for-python-setup-py-test
+        import test.runtests
 
 setup(
     name='django-friendface',
@@ -31,7 +55,7 @@ setup(
     dependency_links = [
         #'git+git://github.com/Celc/facebook-sdk.git#egg=facebook-sdk',
     ],
-    test_suite='runtests.runtests',
+    cmdclass={'test': PyTest},
     include_package_data=True,
     entry_points={},
     classifiers=[

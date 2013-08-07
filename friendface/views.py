@@ -16,7 +16,6 @@ from friendface.models import (FacebookApplication, FacebookAuthorization,
                                FacebookUser, FacebookInvitation)
 from friendface.shortcuts import redirectjs
 
-
 def authorized(request, authorization_id):
     auth = FacebookAuthorization.objects.get(id=authorization_id)
     if request.GET.get('error'):

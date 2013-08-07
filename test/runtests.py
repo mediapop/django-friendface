@@ -9,7 +9,7 @@ settings.configure(
             'ENGINE': 'django.db.backends.sqlite3',
         }
     },
-    ROOT_URLCONF='testurlconf',
+    ROOT_URLCONF='test.testurlconf',
     AUTH_PROFILE_MODULE='accounts.UserProfile',
     INSTALLED_APPS=(
         'django.contrib.auth',
