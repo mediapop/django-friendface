@@ -18,7 +18,7 @@ from friendface.models import (FacebookApplication, FacebookAuthorization,
 from friendface.shortcuts import redirectjs
 
 # Match Facebook user agents for places where special logic is needed.
-FACEBOOK_AGENT_RE = re.compile('(facebookexternalhit)', re.I)
+FACEBOOK_USER_AGENT = 'facebookexternalhit'
 
 
 def authorized(request, authorization_id):
@@ -252,7 +252,8 @@ class FacebookAppAuthMixin(object):
                 )
         # If it's the scraper then don't require it to authorize, just
         # continue on and let it see the page (and read the sharing message)
-        elif FACEBOOK_AGENT_RE.search(request.META.get('HTTP_USER_AGENT', '')):
+        elif request.META.get('HTTP_USER_AGENT',
+                              '').lower().startswith(FACEBOOK_USER_AGENT):
             return super(FacebookAppAuthMixin, self).dispatch(
                 request, *args, **kwargs
             )

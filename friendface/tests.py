@@ -6,7 +6,7 @@ import unittest
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse, NoReverseMatch
-from django.http import HttpRequest
+from django.http import HttpRequest, HttpResponse
 from django.test.testcases import TestCase
 from django.views.generic import View
 
@@ -193,13 +193,19 @@ class FacebookAuthorizationMixinTestCase(TestCase):
         self.assertEqual(response._headers['location'][1], target)
 
     def test_display_page_when_facebook_user_agent(self):
-        '''Should let through anyway if the user agent is the scraper'''
+        """Should let through anyway if the user agent is the scraper"""
         self.request.META['HTTP_USER_AGENT'] = (
             'facebookexternalhit/1.1 (+http://www.facebook.com/'
             'externalhit_uatext.php)'
         )
-        with self.assertRaises(AttributeError):
-            FacebookAppAuthMixin().dispatch(self.request)
+        self.request.method = 'get'
+        class TestView(FacebookAppAuthMixin, View):
+            def get(self, request, *args, **kwargs):
+                return HttpResponse('OK')
+
+        response = TestView().dispatch(self.request)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('OK', response.content)
 
 
 class environment:
