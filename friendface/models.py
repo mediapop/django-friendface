@@ -132,6 +132,9 @@ class FacebookUser(AccessTokenMixin, models.Model, FacebookRequestMixin):
     def __unicode__(self):
         return self.full_name()
 
+    def get_facebook_url(self):
+        return 'https://www.facebook.com/profile.php?id={0}'.format(self.uid)
+
 
 class FacebookAuthorization(models.Model):
     application = models.ForeignKey('FacebookApplication')
