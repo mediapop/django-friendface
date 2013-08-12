@@ -236,17 +236,7 @@ class FacebookAppAuthMixin(object):
     def dispatch(self, request, *args, **kwargs):
         self.request = request
 
-        # If it's the scraper then don't require it to authorize, just
-        # continue on and let it see the page (and read the sharing message)
-        is_facebook_scraper = bool(FACEBOOK_AGENT_RE.search(
-            request.META.get('HTTP_USER_AGENT', '')
-        ))
-
-        if is_facebook_scraper:
-            return super(FacebookAppAuthMixin, self).dispatch(
-                request, *args, **kwargs
-            )
-        elif request.user.is_authenticated() and request.facebook:
+        if request.user.is_authenticated() and request.facebook:
             try:
                 # @todo In Django 1.5 it should be possible to reduce this to:
                 # request.user.facebook.application == request.facebook
@@ -260,6 +250,12 @@ class FacebookAppAuthMixin(object):
                 return super(FacebookAppAuthMixin, self).dispatch(
                     request, *args, **kwargs
                 )
+        # If it's the scraper then don't require it to authorize, just
+        # continue on and let it see the page (and read the sharing message)
+        elif FACEBOOK_AGENT_RE.search(request.META.get('HTTP_USER_AGENT', '')):
+            return super(FacebookAppAuthMixin, self).dispatch(
+                request, *args, **kwargs
+            )
 
         auth_url = self.get_auth_url()
         return self.redirect(request.facebook.get_authorize_url(auth_url))
