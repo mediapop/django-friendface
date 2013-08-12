@@ -192,6 +192,15 @@ class FacebookAuthorizationMixinTestCase(TestCase):
             'next': 'https://apps.facebook.com/mhe/same-url/'})
         self.assertEqual(response._headers['location'][1], target)
 
+    def test_display_page_when_facebook_user_agent(self):
+        '''Should let through anyway if the user agent is the scraper'''
+        self.request.META['HTTP_USER_AGENT'] = (
+            'facebookexternalhit/1.1 (+http://www.facebook.com/'
+            'externalhit_uatext.php)'
+        )
+        with self.assertRaises(AttributeError):
+            FacebookAppAuthMixin().dispatch(self.request)
+
 
 class environment:
     """

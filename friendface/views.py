@@ -1,5 +1,6 @@
 import json
 import random
+import re
 import urllib2
 
 from django.contrib.auth import authenticate, login
@@ -15,6 +16,9 @@ from django.views.generic import RedirectView, TemplateView, View
 from friendface.models import (FacebookApplication, FacebookAuthorization,
                                FacebookUser, FacebookInvitation)
 from friendface.shortcuts import redirectjs
+
+# Match Facebook user agents for places where special logic is needed.
+FACEBOOK_AGENT_RE = re.compile('(facebookexternalhit)', re.I)
 
 
 def authorized(request, authorization_id):
@@ -232,7 +236,17 @@ class FacebookAppAuthMixin(object):
     def dispatch(self, request, *args, **kwargs):
         self.request = request
 
-        if request.user.is_authenticated() and request.facebook:
+        # If it's the scraper then don't require it to authorize, just
+        # continue on and let it see the page (and read the sharing message)
+        is_facebook_scraper = bool(FACEBOOK_AGENT_RE.search(
+            request.META.get('HTTP_USER_AGENT', '')
+        ))
+
+        if is_facebook_scraper:
+            return super(FacebookAppAuthMixin, self).dispatch(
+                request, *args, **kwargs
+            )
+        elif request.user.is_authenticated() and request.facebook:
             try:
                 # @todo In Django 1.5 it should be possible to reduce this to:
                 # request.user.facebook.application == request.facebook
@@ -240,12 +254,12 @@ class FacebookAppAuthMixin(object):
                 if(not facebook_user
                    or request.facebook != facebook_user.application):
                     raise ObjectDoesNotExist  # @todo Pick a better exception?
-            except ObjectDoesNotExist as e:
+            except ObjectDoesNotExist:
                 pass
             else:
-                return super(FacebookAppAuthMixin, self).dispatch(request,
-                                                                  *args,
-                                                                  **kwargs)
+                return super(FacebookAppAuthMixin, self).dispatch(
+                    request, *args, **kwargs
+                )
 
         auth_url = self.get_auth_url()
         return self.redirect(request.facebook.get_authorize_url(auth_url))
