@@ -6,8 +6,10 @@ from friendface.models import FacebookUser
 
 class P3PMiddleware(object):
     def process_response(self, request, response):
-        response['P3P'] = ("Nonsense https://support.google.com/accounts/bin/"
-                           "answer.py?hl=en&answer=151657")
+        response['P3P'] = (
+            'CP="This is not a P3P policy! See http://www.google.com/support/'
+            'accounts/bin/answer.py?hl=en&answer=151657 for more info."'
+        )
         return response
 
 
