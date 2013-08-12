@@ -253,7 +253,7 @@ class FacebookAppAuthMixin(object):
         # If it's the scraper then don't require it to authorize, just
         # continue on and let it see the page (and read the sharing message)
         elif request.META.get('HTTP_USER_AGENT',
-                              '').lower().startswith(FACEBOOK_USER_AGENT):
+                              '').startswith(FACEBOOK_USER_AGENT):
             return super(FacebookAppAuthMixin, self).dispatch(
                 request, *args, **kwargs
             )
