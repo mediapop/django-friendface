@@ -1,5 +1,5 @@
 from django.contrib.auth.models import User
-import random
+from random import randrange
 
 import factory
 from mock import Mock
@@ -13,8 +13,8 @@ def random_hex_string(length, max_length=None):
     length = length / 2
     if max_length: max_length = max_length / 2
 
-    return ('{:0%dx}' % str_length).format(random.randrange(
-        str_length ** random.randrange(length, max_length)),
+    return ('{:0%dx}' % str_length).format(randrange(
+        str_length ** randrange(length, max_length)),
     )
 
 
@@ -60,7 +60,7 @@ class FacebookApplicationFactory(DontRunPreSaveMixin,
                                  factory.DjangoModelFactory):
         FACTORY_FOR = FacebookApplication
 
-        id = factory.Sequence(lambda n: (8 ** random.randrange(16, 20)) + n)
+        id = factory.Sequence(lambda n: (8 ** randrange(16, 20)) + int(n))
         name = factory.Sequence(lambda n: 'Application {0}'.format(n))
         secret = factory.LazyAttribute(lambda x: random_hex_string(16, 32))
         default_scope = 'user_likes,email'
@@ -103,7 +103,7 @@ class UserFactory(factory.DjangoModelFactory):
 class FacebookUserFactory(factory.DjangoModelFactory):
     FACTORY_FOR = FacebookUser
 
-    uid = factory.Sequence(lambda n: (8 ** random.randrange(16, 20)) + n)
+    uid = factory.Sequence(lambda n: (8 ** randrange(16, 20)) + int(n))
     first_name = 'Random user'
     last_name = factory.Sequence(lambda n: 'No. {}'.format(n))
     access_token = factory.LazyAttribute(lambda a: random_hex_string(50, 64))
@@ -137,7 +137,7 @@ class FacebookInvitationFactory(DontRunPreSaveMixin,
                                 factory.DjangoModelFactory):
     FACTORY_FOR = FacebookInvitation
 
-    request_id = factory.Sequence(lambda n: 8 ** random.randrange(16, 20) + n)
+    request_id = factory.Sequence(lambda n: 8 ** randrange(16, 20) + int(n))
     application = factory.SubFactory(FacebookApplicationFactory)
     sender = factory.SubFactory(
         FacebookUserFactory,
