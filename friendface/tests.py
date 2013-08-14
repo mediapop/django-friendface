@@ -12,12 +12,24 @@ from django.views.generic import View
 
 from facebook import GraphAPI
 from mock import patch
+from testfixtures import LogCapture
 
+from friendface import tasks
 from friendface.fixtures import (create_user, FacebookApplicationFactory,
                                  FacebookInvitationFactory, FacebookPageFactory)
 from friendface.models import (FacebookApplication, FacebookAuthorization,
                                FacebookUser, FacebookInvitation)
+from friendface.shortcuts import rescrape_url, ScrapingError
 from friendface.views import FacebookAppAuthMixin, FacebookPostAsGetMixin
+
+# If a response for requests needs to be faked, add on and use this
+class FakeResponse(object):
+    def __init__(self, status_code, json=None):
+        self.status_code = status_code
+        self._json = json
+
+    def json(self):
+        return self._json
 
 
 TEST_USER = {
@@ -425,3 +437,56 @@ class FacebookInvitationMixinTest(TestCase):
         self.assertEqual(res.status_code, 302)
         self.assertTrue('request_ids' in res.get('Location'))
         self.assertTrue(str(self.invitation.request_id) in res.get('Location'))
+
+
+@patch('requests.get', return_value=FakeResponse(200))
+class Rescraping(TestCase):
+    """Not much to test with this one, but a start for expected behavior
+    right now"""
+    def test_should_raise_assertion_error_when_not_absolute_url(self, _):
+        self.assertRaises(ValueError, rescrape_url, 'fake-url')
+
+    def test_should_return_true_when_all_went_okay(self, _):
+        self.assertTrue(rescrape_url('http://something-else.sg/'))
+
+    def test_should_raise_scrapingerror_when_response_other_than_ok(self, _):
+        url = 'http://something-else.sg/'
+        json = {'something': 'fluffy'}
+
+        with patch('requests.get', return_value=FakeResponse(404, json)):
+            try:
+                rescrape_url(url)
+            except ScrapingError as exc:
+                self.assertIn(url, exc.msg)
+                self.assertEqual(exc.json, json)
+            else:
+                self.fail("Should've raised ScrapingError")
+
+    def test_task_successfull(self, _):
+        """Do nothing when all is a-ok"""
+        tasks.rescrape_urls(['http://something-test/'])
+
+    def test_task_unsuccessfull_invalid_url(self, _):
+        url = 'invalid-url'
+        with LogCapture() as l:
+            tasks.rescrape_urls([url,])
+
+            l.check(
+                ('friendface', 'ERROR',
+                 'Failed to tell Facebook to rescrape URL "{0}"'.format(url))
+            )
+
+    def test_task_unsuccessfull_facebook_response_other_than_ok(self, _):
+        url = 'http://something-else.sg/'
+        json = {'something': 'fluffy'}
+
+        with patch('requests.get', return_value=FakeResponse(404, json)):
+            with LogCapture() as l:
+                tasks.rescrape_urls([url,])
+
+                l.check(
+                    ('friendface', 'ERROR',
+                     'Failed to tell Facebook to rescrape URL '
+                     '"{0}"'.format(url)),
+                )
+                self.assertEqual(l.records[0].facebook_response, json)

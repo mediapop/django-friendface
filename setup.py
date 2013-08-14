@@ -49,6 +49,7 @@ tests_requires = [
     'django-nose',
     'factory-boy',
     'coverage',
+    'testfixtures',
 ]
 
 

@@ -15,6 +15,8 @@ import requests
 
 from model_utils.fields import MonitorField
 
+from friendface.shortcuts import rescrape_url
+
 logger = logging.getLogger('friendface')
 
 
@@ -351,12 +353,7 @@ class FacebookApplication(AccessTokenMixin, models.Model,
     def scrape(self, obj):
         # Tell facebook to crawl the URL so it both has the data already on
         # first share and we clear all of those debug ones.
-        data = {
-            'id': "{0}{1}".format(self.url, obj.get_absolute_url()),
-            'scrape': 'true'
-        }
-        return urllib2.urlopen('https://graph.facebook.com/',
-                               urllib.urlencode(data)).read()
+        return rescrape_url(urlparse.urljoin(self.url, obj.get_absolute_url()))
 
     def get_absolute_url(self):
         return self.url
