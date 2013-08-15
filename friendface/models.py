@@ -312,9 +312,9 @@ class FacebookApplication(AccessTokenMixin, models.Model,
             return "https://apps.facebook.com/{0}/".format(self.namespace or
                                                            self.id)
         canvas_path = urlparse.urlparse(self.canvas_url).path
-        assert location.startswith(canvas_path), "The application path %s " \
-            "doesn't is not the start of the location path so no canvas url " \
-            "can be derived."
+        if not location.startswith(canvas_path):
+            raise ValueError("Location %s must start with the canvas root "
+                             "%s to derive the url" % (location, canvas_path))
         clipped_path = location[len(canvas_path):]
         return urlparse.urljoin(self.url, clipped_path)
 
