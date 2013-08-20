@@ -24,7 +24,7 @@ def rescrape_url(url):
     if not url.startswith('http'):
         raise ValueError('url needs to be absolute. (http://..)')
 
-    res =  requests.get('http://graph.facebook.com/', params={
+    res = requests.get('http://graph.facebook.com/', params={
         'id': url,
         'scrape': 'true',
     })
@@ -32,5 +32,5 @@ def rescrape_url(url):
     if res.status_code == requests.codes.ok:
         return True
     else:
-         raise ScrapingError('Problem rescraping {0}'.format(url),
-                             res.json())
+        raise ScrapingError('Problem rescraping {0}'.format(url),
+                            res.json())
