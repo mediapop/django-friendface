@@ -1,6 +1,5 @@
 import json
 import random
-import re
 import urllib2
 
 from django.contrib.auth import authenticate, login
