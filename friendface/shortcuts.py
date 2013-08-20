@@ -1,7 +1,10 @@
+import logging
 from django.http import HttpResponse
 from django.template.loader import render_to_string
-
 import requests
+
+
+logger = logging.getLogger('friendface')
 
 
 class ScrapingError(Exception):
@@ -24,6 +27,7 @@ def rescrape_url(url):
     if not url.startswith('http'):
         raise ValueError('url needs to be absolute. (http://..)')
 
+    logger.debug('Scraping %s', url)
     res = requests.get('http://graph.facebook.com/', params={
         'id': url,
         'scrape': 'true',

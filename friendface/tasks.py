@@ -23,6 +23,7 @@ except ImportError:
 
 from friendface.shortcuts import rescrape_url, ScrapingError
 
+
 @task()
 def rescrape_urls(urls):
     """Will in turn call shortcuts.rescrape_url on each URL in `urls`."""
