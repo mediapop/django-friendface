@@ -119,10 +119,10 @@ class FacebookUser(AccessTokenMixin, models.Model, FacebookRequestMixin):
         return response.json()
 
     def get_long_lived_access_token(self):
-        '''
+        """
         format of response: access_token=<token>&timestamp=<timestamp>
         Only it doesn't give the timestamp every time.
-        '''
+        """
         app = self.application
         return self.request('/oauth/access_token', args=dict(
             client_id=app.id,
@@ -449,7 +449,7 @@ class FacebookInvitation(models.Model):
     @classmethod
     def create_with_receiver(cls, receiver, request_id, application, sender,
                              **kwargs):
-        '''
+        """
         Arguments:
           receiver: The Facebook UID of the person who receives the request
           request_id: Facebooks request id
@@ -459,7 +459,7 @@ class FacebookInvitation(models.Model):
         Optional arguments:
           next: The URL the user will be forcefully be redirected to after
                 the invitation has been accepted.
-        '''
+        """
         receiver, _ = FacebookUser.objects.get_or_create(
             uid=receiver,
             application=application
@@ -532,7 +532,7 @@ class PageAdmin(AccessTokenMixin, models.Model, FacebookRequestMixin):
 
     @classmethod
     def create_for_user(cls, user):
-        '''
+        """
         Given a FacebookUser instance with manage_pages permissions this will
         query Facebook for all pages this user has access to.
 
@@ -541,7 +541,7 @@ class PageAdmin(AccessTokenMixin, models.Model, FacebookRequestMixin):
 
         Also all pages in the database that has not been queried will be
         deleted.
-        '''
+        """
         pages = user.request(path='/me/accounts')
         if not 'data' in pages:
             return False

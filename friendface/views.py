@@ -105,7 +105,7 @@ def channel(request):
 
 
 def record_facebook_invitation(request):
-    '''Expects a post request formatted just as the Facebook App
+    """Expects a post request formatted just as the Facebook App
     request response sent through the wire encoded by jQuery.
 
     If you need to do processing after the invitation has been created
@@ -120,7 +120,7 @@ def record_facebook_invitation(request):
     Returns:
       400 when no request has been set
       201 when invitations has been successfully created
-    '''
+    """
     request_id = request.POST.get('request')
     if not request_id: return HttpResponseBadRequest('No request set.')
 
@@ -220,8 +220,9 @@ class FacebookAppAuthMixin(object):
             return self.auth_url
 
         session = getattr(self.request, 'session', False)
-        if(self.request.FACEBOOK
-           and not (session and not session.get('is_facebook_mobile', False))):
+
+        if(self.request.FACEBOOK and
+               (session and not session.get('is_facebook_mobile', False))):
             return self.request.facebook.build_canvas_url(
                 self.request.get_full_path()
             )
@@ -234,6 +235,8 @@ class FacebookAppAuthMixin(object):
 
     def dispatch(self, request, *args, **kwargs):
         self.request = request
+
+        print self.get_auth_url()
 
         if request.user.is_authenticated() and request.facebook:
             try:
@@ -262,7 +265,7 @@ class FacebookAppAuthMixin(object):
 
 
 class FacebookApplicationInstallRedirectView(RedirectView):
-    '''Redirect to the correct place where the user can install this
+    """Redirect to the correct place where the user can install this
     app to their Facebook page.
 
     To use simply add the following to your urls.py
@@ -277,7 +280,7 @@ class FacebookApplicationInstallRedirectView(RedirectView):
       app_redirect_field: The field on FacebookApplication that will be
                           used for return URL after the app has installed.
                           Default: 'secure_canvas_url'
-    '''
+    """
     app_redirect_field = 'secure_canvas_url'
     permanent = False
 
@@ -325,9 +328,9 @@ class FacebookInvitationMixin(object):
     # dealt with individually.
 
     def handle_invitation(self, invitation):
-        '''To be able to add custom logic after an invitation has been
+        """To be able to add custom logic after an invitation has been
         accepted. An invitation object sent in for further logic.
-        '''
+        """
         pass
 
     def dispatch(self, request, *args, **kwargs):
@@ -375,24 +378,25 @@ class FacebookInvitationMixin(object):
 
 class FacebookHandleInvitationMixin(FacebookInvitationMixin,
                                     FacebookAppAuthMixin):
-    '''Users accepting invitations and authing them if they're not
+    """Users accepting invitations and authing them if they're not
     authed before the invitations get accepted.
-    '''
+    """
 
 
 class FacebookInvitationCreateView(View):
-    '''Use this view if you need to do some extra handling after the
+    """ Use this view if you need to do some extra handling after the
     invitation has been created by overriding `handle_invitation`.
 
     If only stock behavior is needed look at `record_facebook_invitation`.
-    '''
+    """
 
     def handle_invitation(self, invitation):
-        '''Called after the invitation has been created in get_context_data'''
+        """Called after the invitation has been created in get_context_data"""
         pass
 
     def get_context_data(self, **kwargs):
-        '''Expects a post request formatted just as the Facebook App
+        """
+        Expects a post request formatted just as the Facebook App
         request response sent through the wire encoded by jQuery.
 
         POST keys:
@@ -403,7 +407,7 @@ class FacebookInvitationCreateView(View):
 
         Raises:
            ValueError when request is not available
-        '''
+        """
         context = {}
         request = self.request.POST.get('request')
         if not request: raise ValueError('No request id specified')

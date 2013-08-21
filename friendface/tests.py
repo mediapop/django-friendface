@@ -376,7 +376,7 @@ class FacebookInvitationMixinTest(TestCase):
                           request_id=request_id)
 
     def test_authed_user_with_no_request_ids(self, _):
-        '''Should not do a redirect or anything, just accept on'''
+        """Should not do a redirect or anything, just accept on"""
         self.assertTrue(self.client.login(facebook_user=self.fb_user))
         res = self.client.get(self.URL)
         self.assertEqual(res.status_code, 200)
@@ -427,9 +427,9 @@ class FacebookInvitationMixinTest(TestCase):
         self.assertEqual(res.context['redirect_to'], url)
 
     def test_accept_invitation_when_not_authed(self, _):
-        '''An unauthed user should get redirected for authing while
+        """An unauthed user should get redirected for authing while
         keeping the request_ids in the next attribute.
-        '''
+        """
         res = self.client.get(self.URL, {
             'request_ids': self.invitation.request_id
         })
