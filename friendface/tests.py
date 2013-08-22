@@ -471,10 +471,12 @@ class Rescraping(TestCase):
         with LogCapture() as l:
             tasks.rescrape_urls([url,])
 
-            l.check(
-                ('friendface', 'ERROR',
-                 'Failed to tell Facebook to rescrape URL "{0}"'.format(url))
-            )
+            correct_message = False
+            for record in l.records:
+                if(record.msg == ('Failed to tell Facebook to rescrape '
+                                  'URL "%s"')):
+                    correct_message = True
+            self.assertTrue(correct_message, 'Error message not logged')
 
     def test_task_unsuccessfull_facebook_response_other_than_ok(self, _):
         url = 'http://something-else.sg/'
@@ -484,9 +486,7 @@ class Rescraping(TestCase):
             with LogCapture() as l:
                 tasks.rescrape_urls([url,])
 
-                l.check(
-                    ('friendface', 'ERROR',
-                     'Failed to tell Facebook to rescrape URL '
-                     '"{0}"'.format(url)),
-                )
-                self.assertEqual(l.records[0].facebook_response, json)
+                for record in l.records:
+                    if(record.msg == ('Failed to tell Facebook to rescrape '
+                                      'URL "{0}"'.format(url))):
+                        self.assertEqual(record.facebook_response, json)
