@@ -235,8 +235,6 @@ class FacebookAppAuthMixin(object):
     def dispatch(self, request, *args, **kwargs):
         self.request = request
 
-        print self.get_auth_url()
-
         if request.user.is_authenticated() and request.facebook:
             try:
                 # @todo In Django 1.5 it should be possible to reduce this to:
