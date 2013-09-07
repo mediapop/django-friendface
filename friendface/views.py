@@ -20,6 +20,10 @@ from friendface.shortcuts import redirectjs
 FACEBOOK_USER_AGENT = 'facebookexternalhit'
 
 
+def set_mobile(request):
+    request.session['is_facebook_mobile'] = True
+
+
 def authorized(request, authorization_id):
     auth = FacebookAuthorization.objects.get(id=authorization_id)
     if request.GET.get('error'):
@@ -200,7 +204,7 @@ class MobileView(RedirectView):
         )
 
     def dispatch(self, request, *args, **kwargs):
-        request.session['is_facebook_mobile'] = True
+        set_mobile(request)
         return super(MobileView, self).dispatch(request, *args, **kwargs)
 
 
@@ -233,6 +237,9 @@ class FacebookAppAuthMixin(object):
         return redirect(url)
 
     def dispatch(self, request, *args, **kwargs):
+        if getattr(request, 'mobile', False):
+            set_mobile(request)
+
         self.request = request
 
         if request.user.is_authenticated() and request.facebook:

@@ -69,3 +69,32 @@ got a recent version of node.js with npm installed. Then simply type:
 $ make test
 
 If necessary npm will install requirements for phantom.js.
+
+## Mobile detection
+
+If the request has `mobile` set to `True` then the
+`FacebookAppAuthMixin` will act like `MobileView` and set the current
+session as Facebook mobile. This means that when the user access the
+app on http://apps.facebook.com then the user will be redirected to
+the bare domain of the app. The current normal workflow goes like:
+
+- Facebook Tab app needs authorization
+- Creates an authorization request and then sends the user to
+  http://apps.facebook.com
+- If the user is using a mobile phone it'll now try to redirect to the
+  bare domain, otherwise display it inline according to the
+  configured canvas url.
+- If the mobile detection middleware has been installed the redirect will
+  instead go to the same url as for mobile phones
+
+To get detection install a mobile detection middleware and make sure
+it marks the as `mobile = True`.
+
+### Recommended mobile detection middleware
+
+Install [django-mobi](https://pypi.python.org/pypi/django-mobi/) and
+add it's middleware to our settings:
+
+    MIDDLEWARE_CLASSES += (
+        'mobi.middleware.MobileDetectionMiddleware'
+    )

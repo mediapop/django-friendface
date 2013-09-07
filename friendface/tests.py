@@ -178,6 +178,7 @@ class FacebookAuthorizationMixinTestCase(TestCase):
         setattr(self.request, 'user', AnonymousUser())
         setattr(self.request, 'FACEBOOK', {})
         setattr(self.request, 'facebook', FacebookApplication.objects.get())
+        setattr(self.request, 'session', {})
         self.base_url = reverse(
             'friendface.views.authorize',
             kwargs={'application_id': self.request.facebook.id})
@@ -203,6 +204,17 @@ class FacebookAuthorizationMixinTestCase(TestCase):
         target = self.base_url + "?" + urllib.urlencode({
             'next': 'https://apps.facebook.com/mhe/same-url/'})
         self.assertEqual(response._headers['location'][1], target)
+
+    def test_auth_on_facebook_but_mobile_return_to_bare_url(self):
+        self.request.FACEBOOK['not'] = 'false'
+        self.request.mobile = True
+        response = FacebookAppAuthMixin().dispatch(self.request)
+        setattr(response, 'client', self.client)
+        target = self.base_url + "?" + urllib.urlencode({
+            'next': 'http://localserver/same-url/'})
+        self.assertEqual(response._headers['location'][1], target)
+        self.assertTrue(self.request.session['is_facebook_mobile'],
+                        'is_facebook_mobile should be set on the session')
 
     def test_display_page_when_facebook_user_agent(self):
         """Should let through anyway if the user agent is the scraper"""
