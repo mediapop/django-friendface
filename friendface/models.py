@@ -477,7 +477,7 @@ class FacebookInvitation(models.Model):
         return unicode(self.request_id)
 
 
-class FacebookPage(models.Model):
+class FacebookPage(FacebookRequestMixin, models.Model):
     """There should only ever be one FacebookPage"""
     id = models.BigIntegerField(primary_key=True,
                                 help_text="The id of the FacebookPage")
@@ -505,8 +505,17 @@ class FacebookPage(models.Model):
     )
 
     def _pre_save(self):
-        graph = facebook.GraphAPI()
-        page_data = graph.request(unicode(self.id))
+        # A little bit of a cheat to get PageAdmin to work quickly.
+        # Certain pages require an access token to even fetch public data,
+        # the ones I've seen so far has all been releated to alcohol.
+        if not hasattr(self, 'access_token'):
+            self.access_token = None
+
+        page_data = self.request(unicode(self.id))
+        if 'error' in page_data:
+            raise facebook.GraphAPIError(page_data['error']['type'],
+                                         page_data['error']['message'])
+
         for key, value in page_data.items():
             setattr(self, key, value)
 
@@ -550,9 +559,12 @@ class PageAdmin(AccessTokenMixin, models.Model, FacebookRequestMixin):
 
         for page in pages['data']:
             try:
-                fb_page, _ = FacebookPage.objects.get_or_create(
-                    id=page['id']
-                )
+                try:
+                    fb_page = FacebookPage.objects.get(id=page['id'])
+                except FacebookPage.DoesNotExist:
+                    fb_page = FacebookPage(id=page['id'])
+                    fb_page.access_token = page['access_token']
+                    fb_page.save()
             except facebook.GraphAPIError as e:
                 logger.error('Error creating FacebookPage "%s" - %s: ',
                              page['id'], e.message, extra={'stack': True})
