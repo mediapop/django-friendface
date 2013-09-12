@@ -1,9 +1,12 @@
 from importlib import import_module
+import logging
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from ...tasks import rescrape_urls
+
+logger = logging.getLogger('friendface')
 
 
 class Command(BaseCommand):
@@ -48,4 +51,10 @@ class Command(BaseCommand):
                 )
 
             self.stdout.write('Rescraping urls for: {0}'.format(app))
-            rescrape_urls.delay(module.urls)
+
+            no_urls = 20
+            for i in xrange(0, len(module.urls), no_urls):
+                urls = module.urls[i:i+no_urls]
+                logger.debug('rescraping urls: %s', urls)
+
+                rescrape_urls.delay(urls)
