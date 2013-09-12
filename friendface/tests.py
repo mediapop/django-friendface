@@ -451,7 +451,7 @@ class FacebookInvitationMixinTest(TestCase):
         self.assertTrue(str(self.invitation.request_id) in res.get('Location'))
 
 
-@patch('requests.get', return_value=FakeResponse(200))
+@patch('requests.post', return_value=FakeResponse(200))
 class Rescraping(TestCase):
     """Not much to test with this one, but a start for expected behavior
     right now"""
@@ -465,7 +465,7 @@ class Rescraping(TestCase):
         url = 'http://something-else.sg/'
         json = {'something': 'fluffy'}
 
-        with patch('requests.get', return_value=FakeResponse(404, json)):
+        with patch('requests.post', return_value=FakeResponse(404, json)):
             try:
                 rescrape_url(url)
             except ScrapingError as exc:
@@ -494,7 +494,7 @@ class Rescraping(TestCase):
         url = 'http://something-else.sg/'
         json = {'something': 'fluffy'}
 
-        with patch('requests.get', return_value=FakeResponse(404, json)):
+        with patch('requests.post', return_value=FakeResponse(404, json)):
             with LogCapture() as l:
                 tasks.rescrape_urls([url,])
 

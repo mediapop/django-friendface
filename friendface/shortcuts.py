@@ -28,7 +28,7 @@ def rescrape_url(url):
         raise ValueError('url needs to be absolute. (http://..)')
 
     logger.debug('Scraping %s', url)
-    res = requests.get('http://graph.facebook.com/', params={
+    res = requests.post('http://graph.facebook.com/', params={
         'id': url,
         'scrape': 'true',
     })
