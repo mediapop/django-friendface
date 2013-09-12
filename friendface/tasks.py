@@ -39,4 +39,4 @@ def rescrape_urls(urls):
                 'Failed to tell Facebook to rescrape URL "%s"',
                 url,
                 extra=extra_logging
-            )fg
+            )
