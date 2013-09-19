@@ -46,10 +46,9 @@ class FacebookContext(object):
 
     @memoize
     def request(self):
-        request = self.django_request.POST.get('signed_request')
-        if not request:
-            return self.application().decode(request)
-
+        signed_request = self.django_request.POST.get('signed_request')
+        if signed_request:
+            return self.application().decode(signed_request)
 
     @memoize
     def page(self):
