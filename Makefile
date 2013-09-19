@@ -4,13 +4,20 @@ PHANTOMJS=$(CURDIR)/node_modules/.bin/mocha-phantomjs
 
 default: coverage
 
+develop:
+	pip install -q "file://`pwd`#egg=django-friendface[tests]"
+	pip install -q -e .
+
 test-py:
-	python test/runtests.py
+	python setup.py test
 
 test-js: node_modules
 	$(PHANTOMJS) -R tap test/tests.html
 
-test: test-js test-py
+test: install-test-requirements test-js test-py
+
+install-test-requirements:
+	pip install "file://`pwd`#egg=django-friendface[tests]"
 
 node_modules: package.json
 	npm install

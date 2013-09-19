@@ -16,6 +16,13 @@ from friendface.models import (FacebookApplication, FacebookAuthorization,
                                FacebookUser, FacebookInvitation)
 from friendface.shortcuts import redirectjs
 
+# Match Facebook user agents for places where special logic is needed.
+FACEBOOK_USER_AGENT = 'facebookexternalhit'
+
+
+def set_mobile(request):
+    request.session['is_facebook_mobile'] = True
+
 
 def authorized(request, authorization_id):
     auth = FacebookAuthorization.objects.get(id=authorization_id)
@@ -99,7 +106,7 @@ def channel(request):
 
 
 def record_facebook_invitation(request):
-    """ Expects a post request formatted just as the Facebook App
+    """Expects a post request formatted just as the Facebook App
     request response sent through the wire encoded by jQuery.
 
     If you need to do processing after the invitation has been created
@@ -193,7 +200,7 @@ class MobileView(RedirectView):
         )
 
     def dispatch(self, request, *args, **kwargs):
-        request.session['is_facebook_mobile'] = True
+        set_mobile(request)
         return super(MobileView, self).dispatch(request, *args, **kwargs)
 
 
@@ -212,9 +219,9 @@ class FacebookAppAuthMixin(object):
         if self.auth_url:
             return self.auth_url
 
-        session = getattr(self.request, 'session', False)
-        if(self.request.FACEBOOK
-           and not (session and not session.get('is_facebook_mobile', False))):
+        session = getattr(self.request, 'session', {})
+
+        if self.request.FACEBOOK and not session.get('is_facebook_mobile'):
             return self.request.facebook.build_canvas_url(
                 self.request.get_full_path()
             )
@@ -226,6 +233,9 @@ class FacebookAppAuthMixin(object):
         return redirect(url)
 
     def dispatch(self, request, *args, **kwargs):
+        if getattr(request, 'mobile', False):
+            set_mobile(request)
+
         self.request = request
 
         if request.user.is_authenticated() and request.facebook:
@@ -236,19 +246,26 @@ class FacebookAppAuthMixin(object):
                 if(not facebook_user
                    or request.facebook != facebook_user.application):
                     raise ObjectDoesNotExist  # @todo Pick a better exception?
-            except ObjectDoesNotExist as e:
+            except ObjectDoesNotExist:
                 pass
             else:
-                return super(FacebookAppAuthMixin, self).dispatch(request,
-                                                                  *args,
-                                                                  **kwargs)
+                return super(FacebookAppAuthMixin, self).dispatch(
+                    request, *args, **kwargs
+                )
+        # If it's the scraper then don't require it to authorize, just
+        # continue on and let it see the page (and read the sharing message)
+        elif request.META.get('HTTP_USER_AGENT',
+                              '').startswith(FACEBOOK_USER_AGENT):
+            return super(FacebookAppAuthMixin, self).dispatch(
+                request, *args, **kwargs
+            )
 
         auth_url = self.get_auth_url()
         return self.redirect(request.facebook.get_authorize_url(auth_url))
 
 
 class FacebookApplicationInstallRedirectView(RedirectView):
-    '''Redirect to the correct place where the user can install this
+    """Redirect to the correct place where the user can install this
     app to their Facebook page.
 
     To use simply add the following to your urls.py
@@ -263,7 +280,7 @@ class FacebookApplicationInstallRedirectView(RedirectView):
       app_redirect_field: The field on FacebookApplication that will be
                           used for return URL after the app has installed.
                           Default: 'secure_canvas_url'
-    '''
+    """
     app_redirect_field = 'secure_canvas_url'
     permanent = False
 
@@ -311,9 +328,9 @@ class FacebookInvitationMixin(object):
     # dealt with individually.
 
     def handle_invitation(self, invitation):
-        '''To be able to add custom logic after an invitation has been
+        """To be able to add custom logic after an invitation has been
         accepted. An invitation object sent in for further logic.
-        '''
+        """
         pass
 
     def dispatch(self, request, *args, **kwargs):
@@ -361,24 +378,25 @@ class FacebookInvitationMixin(object):
 
 class FacebookHandleInvitationMixin(FacebookInvitationMixin,
                                     FacebookAppAuthMixin):
-    '''Users accepting invitations and authing them if they're not
+    """Users accepting invitations and authing them if they're not
     authed before the invitations get accepted.
-    '''
+    """
 
 
 class FacebookInvitationCreateView(View):
-    '''Use this view if you need to do some extra handling after the
+    """ Use this view if you need to do some extra handling after the
     invitation has been created by overriding `handle_invitation`.
 
     If only stock behavior is needed look at `record_facebook_invitation`.
-    '''
+    """
 
     def handle_invitation(self, invitation):
-        '''Called after the invitation has been created in get_context_data'''
+        """Called after the invitation has been created in get_context_data"""
         pass
 
     def get_context_data(self, **kwargs):
-        '''Expects a post request formatted just as the Facebook App
+        """
+        Expects a post request formatted just as the Facebook App
         request response sent through the wire encoded by jQuery.
 
         POST keys:
@@ -389,7 +407,7 @@ class FacebookInvitationCreateView(View):
 
         Raises:
            ValueError when request is not available
-        '''
+        """
         context = {}
         request = self.request.POST.get('request')
         if not request: raise ValueError('No request id specified')

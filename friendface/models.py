@@ -15,6 +15,8 @@ import requests
 
 from model_utils.fields import MonitorField
 
+from friendface.shortcuts import rescrape_url
+
 logger = logging.getLogger('friendface')
 
 
@@ -122,10 +124,10 @@ class FacebookUser(AccessTokenMixin, models.Model, FacebookRequestMixin):
         return response.json()
 
     def get_long_lived_access_token(self):
-        '''
+        """
         format of response: access_token=<token>&timestamp=<timestamp>
         Only it doesn't give the timestamp every time.
-        '''
+        """
         app = self.application
         return self.request('/oauth/access_token', args=dict(
             client_id=app.id,
@@ -136,6 +138,9 @@ class FacebookUser(AccessTokenMixin, models.Model, FacebookRequestMixin):
 
     def __unicode__(self):
         return self.full_name()
+
+    def get_facebook_url(self):
+        return 'https://www.facebook.com/profile.php?id={0}'.format(self.uid)
 
 
 class FacebookAuthorization(models.Model):
@@ -312,9 +317,9 @@ class FacebookApplication(AccessTokenMixin, models.Model,
             return "https://apps.facebook.com/{0}/".format(self.namespace or
                                                            self.id)
         canvas_path = urlparse.urlparse(self.canvas_url).path
-        assert location.startswith(canvas_path), "The application path %s " \
-            "doesn't is not the start of the location path so no canvas url " \
-            "can be derived."
+        if not location.startswith(canvas_path):
+            raise ValueError("Location %s must start with the canvas root "
+                             "%s to derive the url" % (location, canvas_path))
         clipped_path = location[len(canvas_path):]
         return urlparse.urljoin(self.url, clipped_path)
 
@@ -353,12 +358,7 @@ class FacebookApplication(AccessTokenMixin, models.Model,
     def scrape(self, obj):
         # Tell facebook to crawl the URL so it both has the data already on
         # first share and we clear all of those debug ones.
-        data = {
-            'id': "{0}{1}".format(self.url, obj.get_absolute_url()),
-            'scrape': 'true'
-        }
-        return urllib2.urlopen('https://graph.facebook.com/',
-                               urllib.urlencode(data)).read()
+        return rescrape_url(urlparse.urljoin(self.url, obj.get_absolute_url()))
 
     def get_absolute_url(self):
         return self.url
@@ -454,7 +454,7 @@ class FacebookInvitation(models.Model):
     @classmethod
     def create_with_receiver(cls, receiver, request_id, application, sender,
                              **kwargs):
-        '''
+        """
         Arguments:
           receiver: The Facebook UID of the person who receives the request
           request_id: Facebooks request id
@@ -464,7 +464,7 @@ class FacebookInvitation(models.Model):
         Optional arguments:
           next: The URL the user will be forcefully be redirected to after
                 the invitation has been accepted.
-        '''
+        """
         receiver, _ = FacebookUser.objects.get_or_create(
             uid=receiver,
             application=application
@@ -482,7 +482,7 @@ class FacebookInvitation(models.Model):
         return unicode(self.request_id)
 
 
-class FacebookPage(models.Model):
+class FacebookPage(FacebookRequestMixin, models.Model):
     """There should only ever be one FacebookPage"""
     id = models.BigIntegerField(primary_key=True,
                                 help_text="The id of the FacebookPage")
@@ -510,8 +510,17 @@ class FacebookPage(models.Model):
     )
 
     def _pre_save(self):
-        graph = facebook.GraphAPI()
-        page_data = graph.request(unicode(self.id))
+        # A little bit of a cheat to get PageAdmin to work quickly.
+        # Certain pages require an access token to even fetch public data,
+        # the ones I've seen so far has all been releated to alcohol.
+        if not hasattr(self, 'access_token'):
+            self.access_token = None
+
+        page_data = self.request(unicode(self.id))
+        if 'error' in page_data:
+            raise facebook.GraphAPIError(page_data['error']['type'],
+                                         page_data['error']['message'])
+
         for key, value in page_data.items():
             setattr(self, key, value)
 
@@ -537,7 +546,7 @@ class PageAdmin(AccessTokenMixin, models.Model, FacebookRequestMixin):
 
     @classmethod
     def create_for_user(cls, user):
-        '''
+        """
         Given a FacebookUser instance with manage_pages permissions this will
         query Facebook for all pages this user has access to.
 
@@ -546,7 +555,7 @@ class PageAdmin(AccessTokenMixin, models.Model, FacebookRequestMixin):
 
         Also all pages in the database that has not been queried will be
         deleted.
-        '''
+        """
         pages = user.request(path='/me/accounts')
         if not 'data' in pages:
             return False
@@ -555,9 +564,12 @@ class PageAdmin(AccessTokenMixin, models.Model, FacebookRequestMixin):
 
         for page in pages['data']:
             try:
-                fb_page, _ = FacebookPage.objects.get_or_create(
-                    id=page['id']
-                )
+                try:
+                    fb_page = FacebookPage.objects.get(id=page['id'])
+                except FacebookPage.DoesNotExist:
+                    fb_page = FacebookPage(id=page['id'])
+                    fb_page.access_token = page['access_token']
+                    fb_page.save()
             except facebook.GraphAPIError as e:
                 logger.error('Error creating FacebookPage "%s" - %s: ',
                              page['id'], e.message, extra={'stack': True})

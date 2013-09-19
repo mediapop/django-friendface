@@ -6,18 +6,30 @@ import unittest
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse, NoReverseMatch
-from django.http import HttpRequest
+from django.http import HttpRequest, HttpResponse
 from django.test.testcases import TestCase
 from django.views.generic import View
 
 from facebook import GraphAPI
 from mock import patch
+from testfixtures import LogCapture
 
+from friendface import tasks
 from friendface.fixtures import (create_user, FacebookApplicationFactory,
                                  FacebookInvitationFactory, FacebookPageFactory)
 from friendface.models import (FacebookApplication, FacebookAuthorization,
                                FacebookUser, FacebookInvitation)
+from friendface.shortcuts import rescrape_url, ScrapingError
 from friendface.views import FacebookAppAuthMixin, FacebookPostAsGetMixin
+
+# If a response for requests needs to be faked, add on and use this
+class FakeResponse(object):
+    def __init__(self, status_code, json=None):
+        self.status_code = status_code
+        self._json = json
+
+    def json(self):
+        return self._json
 
 
 TEST_USER = {
@@ -166,6 +178,7 @@ class FacebookAuthorizationMixinTestCase(TestCase):
         setattr(self.request, 'user', AnonymousUser())
         setattr(self.request, 'FACEBOOK', {})
         setattr(self.request, 'facebook', FacebookApplication.objects.get())
+        setattr(self.request, 'session', {})
         self.base_url = reverse(
             'friendface.views.authorize',
             kwargs={'application_id': self.request.facebook.id})
@@ -191,6 +204,32 @@ class FacebookAuthorizationMixinTestCase(TestCase):
         target = self.base_url + "?" + urllib.urlencode({
             'next': 'https://apps.facebook.com/mhe/same-url/'})
         self.assertEqual(response._headers['location'][1], target)
+
+    def test_auth_on_facebook_but_mobile_return_to_bare_url(self):
+        self.request.FACEBOOK['not'] = 'false'
+        self.request.mobile = True
+        response = FacebookAppAuthMixin().dispatch(self.request)
+        setattr(response, 'client', self.client)
+        target = self.base_url + "?" + urllib.urlencode({
+            'next': 'http://localserver/same-url/'})
+        self.assertEqual(response._headers['location'][1], target)
+        self.assertTrue(self.request.session['is_facebook_mobile'],
+                        'is_facebook_mobile should be set on the session')
+
+    def test_display_page_when_facebook_user_agent(self):
+        """Should let through anyway if the user agent is the scraper"""
+        self.request.META['HTTP_USER_AGENT'] = (
+            'facebookexternalhit/1.1 (+http://www.facebook.com/'
+            'externalhit_uatext.php)'
+        )
+        self.request.method = 'get'
+        class TestView(FacebookAppAuthMixin, View):
+            def get(self, request, *args, **kwargs):
+                return HttpResponse('OK')
+
+        response = TestView().dispatch(self.request)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('OK', response.content)
 
 
 class environment:
@@ -349,7 +388,7 @@ class FacebookInvitationMixinTest(TestCase):
                           request_id=request_id)
 
     def test_authed_user_with_no_request_ids(self, _):
-        '''Should not do a redirect or anything, just accept on'''
+        """Should not do a redirect or anything, just accept on"""
         self.assertTrue(self.client.login(facebook_user=self.fb_user))
         res = self.client.get(self.URL)
         self.assertEqual(res.status_code, 200)
@@ -400,9 +439,9 @@ class FacebookInvitationMixinTest(TestCase):
         self.assertEqual(res.context['redirect_to'], url)
 
     def test_accept_invitation_when_not_authed(self, _):
-        '''An unauthed user should get redirected for authing while
+        """An unauthed user should get redirected for authing while
         keeping the request_ids in the next attribute.
-        '''
+        """
         res = self.client.get(self.URL, {
             'request_ids': self.invitation.request_id
         })
@@ -410,3 +449,56 @@ class FacebookInvitationMixinTest(TestCase):
         self.assertEqual(res.status_code, 302)
         self.assertTrue('request_ids' in res.get('Location'))
         self.assertTrue(str(self.invitation.request_id) in res.get('Location'))
+
+
+@patch('requests.post', return_value=FakeResponse(200))
+class Rescraping(TestCase):
+    """Not much to test with this one, but a start for expected behavior
+    right now"""
+    def test_should_raise_assertion_error_when_not_absolute_url(self, _):
+        self.assertRaises(ValueError, rescrape_url, 'fake-url')
+
+    def test_should_return_true_when_all_went_okay(self, _):
+        self.assertTrue(rescrape_url('http://something-else.sg/'))
+
+    def test_should_raise_scrapingerror_when_response_other_than_ok(self, _):
+        url = 'http://something-else.sg/'
+        json = {'something': 'fluffy'}
+
+        with patch('requests.post', return_value=FakeResponse(404, json)):
+            try:
+                rescrape_url(url)
+            except ScrapingError as exc:
+                self.assertIn(url, exc.msg)
+                self.assertEqual(exc.json, json)
+            else:
+                self.fail("Should've raised ScrapingError")
+
+    def test_task_successfull(self, _):
+        """Do nothing when all is a-ok"""
+        tasks.rescrape_urls(['http://something-test/'])
+
+    def test_task_unsuccessfull_invalid_url(self, _):
+        url = 'invalid-url'
+        with LogCapture() as l:
+            tasks.rescrape_urls([url,])
+
+            correct_message = False
+            for record in l.records:
+                if(record.msg == ('Failed to tell Facebook to rescrape '
+                                  'URL "%s"')):
+                    correct_message = True
+            self.assertTrue(correct_message, 'Error message not logged')
+
+    def test_task_unsuccessfull_facebook_response_other_than_ok(self, _):
+        url = 'http://something-else.sg/'
+        json = {'something': 'fluffy'}
+
+        with patch('requests.post', return_value=FakeResponse(404, json)):
+            with LogCapture() as l:
+                tasks.rescrape_urls([url,])
+
+                for record in l.records:
+                    if(record.msg == ('Failed to tell Facebook to rescrape '
+                                      'URL "{0}"'.format(url))):
+                        self.assertEqual(record.facebook_response, json)
