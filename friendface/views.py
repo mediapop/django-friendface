@@ -238,24 +238,11 @@ class FacebookAppAuthMixin(object):
 
         self.request = request
 
-        if request.user.is_authenticated() and request.facebook:
-            try:
-                # @todo In Django 1.5 it should be possible to reduce this to:
-                # request.user.facebook.application == request.facebook
-                facebook_user = request.user.get_profile().facebook
-                if(not facebook_user
-                   or request.facebook != facebook_user.application):
-                    raise ObjectDoesNotExist  # @todo Pick a better exception?
-            except ObjectDoesNotExist:
-                pass
-            else:
-                return super(FacebookAppAuthMixin, self).dispatch(
-                    request, *args, **kwargs
-                )
         # If it's the scraper then don't require it to authorize, just
         # continue on and let it see the page (and read the sharing message)
-        elif request.META.get('HTTP_USER_AGENT',
-                              '').startswith(FACEBOOK_USER_AGENT):
+        if request.META.get('HTTP_USER_AGENT',
+                            '').startswith(FACEBOOK_USER_AGENT) or \
+                self.request.user():
             return super(FacebookAppAuthMixin, self).dispatch(
                 request, *args, **kwargs
             )
