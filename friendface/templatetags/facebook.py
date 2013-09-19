@@ -18,7 +18,7 @@ class FacebookUrlNode(template.Node):
             return path
         if not hasattr(request, 'facebook'):
             return ''
-        application = request.facebook
+        application = request.facebook.application()
         return application.build_canvas_url(path)
 
 

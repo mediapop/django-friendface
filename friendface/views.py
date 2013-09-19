@@ -3,7 +3,7 @@ import random
 import urllib2
 
 from django.contrib.auth import authenticate, login
-from django.contrib.auth.models import User, SiteProfileNotAvailable
+from django.contrib.auth.models import User
 from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render, redirect
@@ -126,7 +126,7 @@ def record_facebook_invitation(request):
     if not request_id:
         return HttpResponseBadRequest('No request set.')
     try:
-        request.facebook.user
+        request.facebook.user()
     except FacebookUser.DoesNotExist:
         HttpResponse(json.dumps({'result': 'error',
                                  'error': 'no friendface user'}),
@@ -137,8 +137,8 @@ def record_facebook_invitation(request):
         FacebookInvitation.create_with_receiver(
             receiver=recipient,
             request_id=request_id,
-            application=request.facebook.application,
-            sender=request.facebook.user,
+            application=request.facebook.application(),
+            sender=request.facebook.user(),
             next=request.POST.get('next', ''))
 
     return HttpResponse(json.dumps({'result': 'ok'}),
@@ -221,8 +221,9 @@ class FacebookAppAuthMixin(object):
 
         session = getattr(self.request, 'session', {})
 
-        if self.request.FACEBOOK and not session.get('is_facebook_mobile'):
-            return self.request.facebook.build_canvas_url(
+        if self.request.facebook.decode() and \
+                not session.get('is_facebook_mobile'):
+            return self.request.facebook.application().build_canvas_url(
                 self.request.get_full_path()
             )
         else:
@@ -281,7 +282,7 @@ class FacebookApplicationInstallRedirectView(RedirectView):
                 return HttpResponseBadRequest('No application with that id.')
         else:
             if hasattr(request, 'facebook'):
-                self.application = request.facebook
+                self.application = request.facebook.application()
             else:
                 return HttpResponseBadRequest('No app configured on this URL.')
 
@@ -299,7 +300,7 @@ class FacebookApplicationInstallRedirectView(RedirectView):
                 '?app_id={0}&redirect_uri={1}').format(
                     self.application.pk,
                     getattr(self.application, self.app_redirect_field)
-                )
+                )  # NOQA
 
 
 class FacebookInvitationMixin(object):
@@ -397,13 +398,14 @@ class FacebookInvitationCreateView(View):
         """
         context = {}
         request = self.request.POST.get('request')
-        if not request: raise ValueError('No request id specified')
+        if not request:
+            raise ValueError('No request id specified')
         fb_user = self.request.user.get_profile().facebook
 
         context.update({
             'request_id': request,
             'sender': fb_user,
-            'application': self.request.facebook,
+            'application': self.request.facebook.application(),
             'next': self.request.POST.get('next', ''),
             'invitations': []
         })
@@ -467,7 +469,8 @@ class LikeGateMixin(object):
         elif like_gate_target and int(page.get('id', 0)) != like_gate_target:
             try:  # @todo Drop get_profile() for 1.5
                 facebook_user = request.user.get_profile().facebook
-                if facebook_user is None: raise ObjectDoesNotExist
+                if facebook_user is None:
+                    raise ObjectDoesNotExist
             except ObjectDoesNotExist:
                 raise ImproperlyConfigured("LikeGate with target must come "
                                            "after facebook auth.")

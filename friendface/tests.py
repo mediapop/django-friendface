@@ -132,7 +132,8 @@ class FacebookPostAsGetMixinTestCase(TestCase):
         setattr(self.request, 'facebook', FacebookApplication.objects.get())
         self.base_url = reverse(
             'friendface.views.authorize',
-            kwargs={'application_id': self.request.facebook.id})
+            kwargs={'application_id': self.request.facebook.application().id}
+        )
 
     def test_regular_post(self):
         setattr(self.request, 'FACEBOOK', {})
@@ -181,7 +182,7 @@ class FacebookAuthorizationMixinTestCase(TestCase):
         setattr(self.request, 'session', {})
         self.base_url = reverse(
             'friendface.views.authorize',
-            kwargs={'application_id': self.request.facebook.id})
+            kwargs={'application_id': self.request.facebook.application().id})
 
     def test_anonymous_users_get_authenticated(self):
         response = FacebookAppAuthMixin().dispatch(self.request)
