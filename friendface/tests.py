@@ -17,10 +17,11 @@ from friendface import tasks
 from friendface.fixtures import (create_user, FacebookApplicationFactory,
                                  FacebookInvitationFactory,
                                  FacebookPageFactory)
+from friendface.middleware import FacebookContext
 from friendface.models import (FacebookApplication, FacebookAuthorization,
                                FacebookUser, FacebookInvitation)
 from friendface.shortcuts import rescrape_url, ScrapingError
-from friendface.views import FacebookAppAuthMixin, FacebookPostAsGetMixin
+from friendface.views import FacebookAppAuthMixin
 
 
 # If a response for requests needs to be faked, add on and use this
@@ -123,40 +124,19 @@ class FacebookApplicationTestCase(TestCase):
 
 
 class FacebookPostAsGetMixinTestCase(TestCase):
+    url = reverse('facebook_post_as_get_mixin')
+
     def setUp(self):
-        old_fixture_equivalent()  # for old tests to work
-        self.request = HttpRequest()
-        self.request.method = 'post'
-        self.request.META = {'SERVER_NAME': 'localserver', 'SERVER_PORT': 80}
-        self.request.path = '/same-url/'
-        setattr(self.request, 'FACEBOOK', {'true': 'value'})
-        setattr(self.request, 'facebook', FacebookApplication.objects.get())
-        self.base_url = reverse(
-            'friendface.views.authorize',
-            kwargs={'application_id': self.request.facebook.application().id}
-        )
+        FacebookApplicationFactory()
 
+    @patch.object(FacebookContext, 'request', lambda _: {'truthy': 'value'})
     def test_regular_post(self):
-        setattr(self.request, 'FACEBOOK', {})
-
-        class TestView(FacebookPostAsGetMixin, View):
-            def get(self, request, *args, **kwargs):
-                return False
-
-            def post(self, request, *args, **kwargs):
-                return True
-
-        self.assertTrue(TestView().dispatch(self.request))
+        response = self.client.post(self.url, {'signed_request': "foo"})
+        self.assertEqual(response.content, 'post')
 
     def test_facebook_request(self):
-        class TestView(FacebookPostAsGetMixin, View):
-            def get(self, request, *args, **kwargs):
-                return True
-
-            def post(self, request, *args, **kwargs):
-                return False
-
-        self.assertTrue(TestView().dispatch(self.request))
+        response = self.client.post(self.url)
+        self.assertEqual(response.content, 'get')
 
 
 class FacebookPageTest(TestCase):

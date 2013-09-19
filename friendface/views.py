@@ -155,7 +155,7 @@ class FacebookPostAsGetMixin(object):
         if mobile and mobile.lower() == 'true':
             request.session['is_facebook_mobile'] = True
 
-        if request.FACEBOOK:
+        if request.facebook.request():
             if not hasattr(self, 'get'):
                 raise ImproperlyConfigured("FacebookPostAsGetMixin needs a "
                                            "get method to dispatch to")
@@ -209,9 +209,9 @@ class FacebookEnabledTemplateView(FacebookPostAsGetMixin, TemplateView):
 
 
 class FacebookAppAuthMixin(object):
-    """ This will cause authentication that will go back to the canvas (if on
-    facebook) or the page (request.FACEBOOK is not present)"""
-    # This is the URL that authentication should redirec to after user
+    """ This will cause authentication which will go return back to the canvas
+    if it was the origin."""
+    # This is the URL that authentication should redirect to after user
     # has authed successfully
     auth_url = ''
 
@@ -459,7 +459,7 @@ class LikeGateMixin(object):
         self.args = args
         self.kwargs = kwargs
 
-        page = request.FACEBOOK.get('page', {})
+        page = request.facebook.request().get('page', {})
         like_gate_target = self.get_like_gate_target()
         if(page and not page['liked']
            and (not like_gate_target or int(page['id']) == like_gate_target)):
