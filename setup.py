@@ -20,7 +20,7 @@ install_requires = [
 
 tests_requires = [
     'mock',
-    'django>=1.4,<1.5',
+    'django>=1.4,<1.6',
     'nose',
     'django-nose',
     'factory-boy',
