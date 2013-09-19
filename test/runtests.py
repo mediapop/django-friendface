@@ -27,10 +27,7 @@ settings.configure(
         'django.middleware.csrf.CsrfViewMiddleware',
         'django.contrib.sessions.middleware.SessionMiddleware',
         'django.contrib.auth.middleware.AuthenticationMiddleware',
-        'friendface.middleware.FacebookApplicationMiddleware',
-        'friendface.middleware.FacebookDecodingMiddleware',
-        'friendface.middleware.DisableCsrfProtectionOnDecodedSignedRequest',
-        'friendface.middleware.FacebookSignedRequestAuthenticationMiddleware',
+        'friendface.middleware.FacebookMiddleware',
     ),
     AUTHENTICATION_BACKENDS=(
         'friendface.auth.backends.FacebookBackend',
