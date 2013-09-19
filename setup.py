@@ -15,7 +15,7 @@ install_requires = [
     'requests>=1.0.0',
     'pytz',
     'django-model-utils',
-    'django>=1.4,<1.5',
+    'django>=1.4,<1.6',
 ]
 
 tests_requires = [
