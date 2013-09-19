@@ -1,12 +1,22 @@
+PACKAGE_PATH=friendface
 PHANTOMJS=$(CURDIR)/node_modules/.bin/mocha-phantomjs
 
 .PHONY : test clean test-py test-js
 
 default: coverage
 
-develop:
+develop: setup-git
 	pip install -q "file://`pwd`#egg=django-friendface[tests]"
 	pip install -q -e .
+
+setup-git:
+	git config branch.autosetuprebase always
+	cd .git/hooks && ln -sf ../../hooks/* ./
+
+lint-python:
+	@echo "Linting Python files"
+	PYFLAKES_NODOCTEST=1 flake8 $(PACKAGE_PATH)
+	@echo ""
 
 test-py:
 	python setup.py test

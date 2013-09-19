@@ -50,6 +50,7 @@ tests_requires = [
     'factory-boy',
     'coverage',
     'testfixtures',
+    'flake8',
 ]
 
 
@@ -59,13 +60,14 @@ setup(
     author='Kit Sunde',
     author_email='kit@mediapop.co',
     url='http://github.com/mediapop/django-friendface',
-    description='Django-friendface is an easy implementation of the Facebook API\'s for Django',
+    description='Django-friendface is an easy implementation of the '
+                'Facebook API\'s for Django',
     long_description=__doc__,
     packages=find_packages(),
     zip_safe=False,
     install_requires=install_requires,
     extras_require={'tests': tests_requires},
-    dependency_links = [
+    dependency_links=[
         'https://github.com/Celc/facebook-sdk/tarball/master#egg=facebook-sdk',
     ],
     cmdclass={'test': PyTest},
