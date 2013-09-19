@@ -132,11 +132,11 @@ class FacebookPostAsGetMixinTestCase(TestCase):
     @patch.object(FacebookContext, 'request', lambda _: {'truthy': 'value'})
     def test_regular_post(self):
         response = self.client.post(self.url, {'signed_request': "foo"})
-        self.assertEqual(response.content, 'post')
+        self.assertEqual(response.content, 'get')
 
     def test_facebook_request(self):
         response = self.client.post(self.url)
-        self.assertEqual(response.content, 'get')
+        self.assertEqual(response.content, 'post')
 
 
 class FacebookPageTest(TestCase):
