@@ -64,7 +64,7 @@ class FacebookMiddleware(object):
 
         # Disable CSRF protection for requests originating from facebook.
         if request.facebook.request():
-            request.facebook.META['CSRF_COOKIE'] = _get_new_csrf_key()
+            request.META['CSRF_COOKIE'] = _get_new_csrf_key()
             request.csrf_processing_done = True
 
     def process_response(self, request, response):
