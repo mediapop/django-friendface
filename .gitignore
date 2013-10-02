@@ -1,4 +1,4 @@
-# C Pythong
+# C Python
 *.pyc
 
 # PyCharm
@@ -7,10 +7,7 @@
 # pip
 django_friendface.egg-info
 
-# nodejs (used for testing)
-node_modules
+# Coverage
 .coverage
 coverage.xml
-htmlcov
 nosetests.xml
-mochatests.xml

@@ -1,5 +1,4 @@
 PACKAGE_PATH=friendface
-PHANTOMJS=$(CURDIR)/node_modules/.bin/mocha-phantomjs
 
 .PHONY : test clean test-py test-js
 
@@ -19,12 +18,9 @@ lint-python:
 	@echo ""
 
 test-py:
-	python setup.py test
+	django-admin.py test $(PACKAGE_PATH) --settings=$(PACKAGE_PATH).tests.settings
 
-test-js: node_modules
-	$(PHANTOMJS) -R tap test/tests.html
-
-test: install-test-requirements test-js test-py
+test: install-test-requirements test-py
 
 install-test-requirements:
 	pip install "file://`pwd`#egg=django-friendface[tests]"
@@ -32,19 +28,11 @@ install-test-requirements:
 node_modules: package.json
 	npm install
 
-coverage: coverage-js coverage-py
+coverage: coverage-py
 
 coverage-py:
 	coverage run test/runtests.py --with-xunit && \
 		coverage xml --omit="admin.py,*.virtualenvs/*,./test/*"
-
-coverage-js: node_modules
-	$(PHANTOMJS) -R xunit test/tests.html > mochatests.xml
-
-coverage-py-html:
-	[ -d htmlcov ] || rm -rf htmlcov
-	coverage run test/runtests.py && \
-		coverage html --omit="admin.py,*.virtualenvs/*,./test/*"
 
 clean:
 	find . -name '*.pyc' | xargs rm -f

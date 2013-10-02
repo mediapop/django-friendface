@@ -10,6 +10,7 @@ class UserProfile(models.Model):
                                     blank=True,
                                     null=True)
 
+
 @receiver(post_save, sender=User, dispatch_uid='create_profile')
 def create_profile(sender, instance, created, **kwargs):
     if created:
