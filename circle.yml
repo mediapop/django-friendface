@@ -1,5 +1,5 @@
 dependencies:
-  ovrride:
+  override:
     - make develop
 test:
   override:
