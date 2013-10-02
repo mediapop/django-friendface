@@ -2,12 +2,10 @@
 import os
 import urllib
 
-from django.contrib.auth.models import AnonymousUser
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest
 from django.test.testcases import TestCase
-from django.views.generic import View
 
 from facebook import GraphAPI
 from mock import patch
@@ -21,7 +19,6 @@ from friendface.middleware import FacebookContext
 from friendface.models import (FacebookApplication, FacebookAuthorization,
                                FacebookUser, FacebookInvitation)
 from friendface.shortcuts import rescrape_url, ScrapingError
-from friendface.views import FacebookAppAuthMixin
 
 
 # If a response for requests needs to be faked, add on and use this
@@ -151,68 +148,45 @@ class FacebookPageTest(TestCase):
         self.assertEqual(unicode(self.page), unicode(self.page.name))
 
 
-class FacebookAuthorizationMixinTestCase(TestCase):
+class FacebookAuthorizationTestCase(TestCase):
+    url = reverse('auth_view')
+
     def setUp(self):
-        old_fixture_equivalent()  # for old tests to work
-        self.request = HttpRequest()
-        self.request.META = {'SERVER_NAME': 'localserver', 'SERVER_PORT': 80}
-        self.request.path = '/same-url/'
-        setattr(self.request, 'user', AnonymousUser())
-        setattr(self.request, 'FACEBOOK', {})
-        setattr(self.request, 'facebook', FacebookApplication.objects.get())
-        setattr(self.request, 'session', {})
-        self.base_url = reverse(
-            'friendface.views.authorize',
-            kwargs={'application_id': self.request.facebook.application().id})
+        self.app = FacebookApplicationFactory(canvas_url='http://testserver/')
 
     def test_anonymous_users_get_authenticated(self):
-        response = FacebookAppAuthMixin().dispatch(self.request)
-        setattr(response, 'client', self.client)
-        target = self.base_url + "?" + urllib.urlencode({
-            'next': 'http://localserver/same-url/'})
-        self.assertEqual(response._headers['location'][1], target)
+        response = self.client.get(self.url)
+        params = {'next': 'http://testserver' + self.url}
+        target_url = '%s?%s' % (self.app.get_authorize_url(),
+                                urllib.urlencode(params))
+        self.assertRedirects(response, target_url)
 
-    def test_auth_return_to_same_url(self):
-        response = FacebookAppAuthMixin().dispatch(self.request)
-        setattr(response, 'client', self.client)
-        target = self.base_url + "?" + urllib.urlencode({
-            'next': 'http://localserver/same-url/'})
-        self.assertEqual(response._headers['location'][1], target)
-
+    @patch.object(FacebookContext, 'request', lambda _: {'truthy': 'value'})
     def test_auth_on_facebook_return_to_canvas_url(self):
-        self.request.FACEBOOK['not'] = 'false'
-        response = FacebookAppAuthMixin().dispatch(self.request)
-        setattr(response, 'client', self.client)
-        target = self.base_url + "?" + urllib.urlencode({
-            'next': 'https://apps.facebook.com/mhe/same-url/'})
-        self.assertEqual(response._headers['location'][1], target)
+        response = self.client.get(self.url)
+        params = {'next': self.app.build_canvas_url(self.url)}
+        target_url = '%s?%s' % (self.app.get_authorize_url(),
+                                urllib.urlencode(params))
+        self.assertRedirects(response, target_url)
 
+    @patch.object(FacebookContext, 'request', lambda _: {'truthy': 'value'})
     def test_auth_on_facebook_but_mobile_return_to_bare_url(self):
-        self.request.FACEBOOK['not'] = 'false'
-        self.request.mobile = True
-        response = FacebookAppAuthMixin().dispatch(self.request)
-        setattr(response, 'client', self.client)
-        target = self.base_url + "?" + urllib.urlencode({
-            'next': 'http://localserver/same-url/'})
-        self.assertEqual(response._headers['location'][1], target)
-        self.assertTrue(self.request.session['is_facebook_mobile'],
-                        'is_facebook_mobile should be set on the session')
+        self.client.get(reverse('mobile_view'))
+        self.assertTrue(self.client.session['is_facebook_mobile'])
+        response = self.client.get(self.url)
+        params = {'next': 'http://testserver' + self.url}
+        target_url = '%s?%s' % (self.app.get_authorize_url(),
+                                urllib.urlencode(params))
+        self.assertRedirects(response, target_url)
 
     def test_display_page_when_facebook_user_agent(self):
         """Should let through anyway if the user agent is the scraper"""
-        self.request.META['HTTP_USER_AGENT'] = (
-            'facebookexternalhit/1.1 (+http://www.facebook.com/'
-            'externalhit_uatext.php)'
-        )
-        self.request.method = 'get'
-
-        class TestView(FacebookAppAuthMixin, View):
-            def get(self, request, *args, **kwargs):
-                return HttpResponse('OK')
-
-        response = TestView().dispatch(self.request)
+        response = self.client.get(
+            self.url,
+            HTTP_USER_AGENT='facebookexternalhit/1.1 (+'
+                            'http://www.facebook.com/externalhit_uatext.php)')
         self.assertEqual(response.status_code, 200)
-        self.assertIn('OK', response.content)
+        self.assertEqual(response.content, 'get')
 
 
 class environment:
