@@ -1,6 +1,6 @@
 PACKAGE_PATH=friendface
 
-.PHONY : test clean test-py test-js
+.PHONY : test clean test-py
 
 default: coverage
 
@@ -25,14 +25,8 @@ test: install-test-requirements test-py
 install-test-requirements:
 	pip install "file://`pwd`#egg=django-friendface[tests]"
 
-node_modules: package.json
-	npm install
-
-coverage: coverage-py
-
-coverage-py:
-	coverage run test/runtests.py --with-xunit && \
-		coverage xml --omit="admin.py,*.virtualenvs/*,./test/*"
+coverage: install-test-requirements
+	coverage run --source=$(PACKAGE_PATH) `which django-admin.py` test $(PACKAGE_PATH) --settings=$(PACKAGE_PATH).tests.settings
 
 clean:
 	find . -name '*.pyc' | xargs rm -f
