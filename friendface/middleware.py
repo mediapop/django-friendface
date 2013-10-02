@@ -67,7 +67,10 @@ class FacebookMiddleware(object):
             request.csrf_processing_done = True
 
     def process_response(self, request, response):
-        if 'P3P' in response:
-            response['P3P'] = ("Nonsense https://support.google.com/accounts/"
-                               "bin/answer.py?hl=en&answer=151657")
+        if 'P3P' not in response:
+            response['P3P'] = (
+                'CP="This is not a P3P policy! '
+                'See http://www.google.com/support/'
+                'accounts/bin/answer.py?hl=en&answer=151657 for more info."'
+            )
         return response
