@@ -31,15 +31,12 @@ def create_user(connect_user_with_app=False,
 
     fb_user = FacebookUserFactory.build(**facebook_user_kwargs)
     if connect_user_with_app: fb_user.application = application
-    fb_user.save()
 
     user = UserFactory.create(email=fb_user.email,
                               first_name=fb_user.first_name,
                               last_name=fb_user.last_name)
-
-    profile = user.get_profile()
-    profile.facebook = fb_user
-    profile.save()
+    fb_user.user = user
+    fb_user.save()
 
     return (fb_user, user, application)
 

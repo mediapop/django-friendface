@@ -332,12 +332,12 @@ class FacebookInvitationMixin(object):
         # If the user is not authenticated just return and let
         # FacebookAppAuthMixin deal with getting us an authed user.
         if(not request.user.is_authenticated()
-           or not request.user.get_profile().facebook):
+           or not request.facebook.user()):
             return super(FacebookInvitationMixin, self).dispatch(
                 request, *args, **kwargs
             )
 
-        facebook_user = request.user.get_profile().facebook
+        facebook_user = request.facebook.user()
         next_url = None
         for request_id in request_ids.split(','):
             try:
@@ -400,7 +400,7 @@ class FacebookInvitationCreateView(View):
         request = self.request.POST.get('request')
         if not request:
             raise ValueError('No request id specified')
-        fb_user = self.request.user.get_profile().facebook
+        fb_user = self.request.facebook.user()
 
         context.update({
             'request_id': request,
@@ -467,8 +467,8 @@ class LikeGateMixin(object):
                           self.get_like_gate_template(),
                           self.get_context_data(**kwargs))
         elif like_gate_target and int(page.get('id', 0)) != like_gate_target:
-            try:  # @todo Drop get_profile() for 1.5
-                facebook_user = request.user.get_profile().facebook
+            facebook_user = request.facebook.user()
+            try:
                 if facebook_user is None:
                     raise ObjectDoesNotExist
             except ObjectDoesNotExist:
