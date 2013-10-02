@@ -11,7 +11,7 @@ class FacebookContext(object):
 
     @memoize
     def application(self):
-        return FacebookApplication.get_for_request(self.request)
+        return FacebookApplication.get_for_request(self.django_request)
 
     @memoize
     def user(self):
