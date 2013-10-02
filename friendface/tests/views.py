@@ -1,7 +1,8 @@
 from django.http import HttpResponse
 from django.views.generic import View
 
-from friendface.views import FacebookHandleInvitationMixin
+from friendface.views import FacebookHandleInvitationMixin, \
+    FacebookPostAsGetMixin
 
 
 class FacebookInvitationHandler(FacebookHandleInvitationMixin, View):
@@ -15,3 +16,11 @@ class FacebookInvitationHandler(FacebookHandleInvitationMixin, View):
 
     def handle_invitation(self, invitation):
         self.handle_invitation_called = True
+
+
+class TestFacebookPostAsGetMixinView(FacebookPostAsGetMixin, View):
+    def get(self, request, *args, **kwargs):
+        return HttpResponse("get")
+
+    def post(self, request, *args, **kwargs):
+        return HttpResponse("post")
