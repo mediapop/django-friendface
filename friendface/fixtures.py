@@ -11,7 +11,8 @@ from .models import (FacebookApplication, FacebookInvitation, FacebookUser,
 def random_hex_string(length, max_length=None):
     str_length = max_length or length
     length = length / 2
-    if max_length: max_length = max_length / 2
+    if max_length:
+        max_length = max_length / 2
 
     return ('{:0%dx}' % str_length).format(randrange(
         str_length ** randrange(length, max_length)),
@@ -30,7 +31,8 @@ def create_user(connect_user_with_app=False,
         application = FacebookApplicationFactory.create(**application_kwargs)
 
     fb_user = FacebookUserFactory.build(**facebook_user_kwargs)
-    if connect_user_with_app: fb_user.application = application
+    if connect_user_with_app:
+        fb_user.application = application
 
     user = UserFactory.create(email=fb_user.email,
                               first_name=fb_user.first_name,
