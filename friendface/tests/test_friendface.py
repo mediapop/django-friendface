@@ -343,19 +343,19 @@ class FacebookApplicationInstallRedirectViewTest(TestCase):
         res = self.client.get(reverse('friendface.views.install',
                                       kwargs=dict(application_id=self.app.id)))
         self.assertEqual(res.status_code, 302)
-        self.assertTrue('facebook.com/dialog/pagetab' in res.get('Location'))
+        self.assertIn('facebook.com/dialog/pagetab', res.get('Location'))
         self.assertIn('app_id={0}'.format(self.app.pk), res.get('Location'))
 
     def test_should_raise_400_on_invalid_app_id(self):
         res = self.client.get(reverse('friendface.views.install',
                                       kwargs=dict(application_id=1234)))
         self.assertEqual(res.status_code, 400)
-        self.assertTrue('No application' in res.content)
+        self.assertIn('No application', res.content)
 
     def test_no_configured_app_should_raise_400(self):
         res = self.client.get(reverse('friendface.views.install'))
         self.assertEqual(res.status_code, 400)
-        self.assertTrue('No app configured on this URL' in res.content)
+        self.assertIn('No app configured on this URL', res.content)
 
     def test_app_configured_and_no_application_id_given_should_redirect(self):
         url = reverse('friendface.views.install')
@@ -365,7 +365,7 @@ class FacebookApplicationInstallRedirectViewTest(TestCase):
         res = self.client.get(url)
 
         self.assertEqual(res.status_code, 302)
-        self.assertTrue('app_id={0}'.format(app.pk) in res.get('Location'))
+        self.assertIn('app_id={0}'.format(app.pk), res.get('Location'))
 
 
 @patch.object(FacebookApplication, 'request')
@@ -417,7 +417,7 @@ class FacebookInvitationMixinTest(TestCase):
             'request_ids': self.invitation.request_id
         })
         self.assertEqual(res.status_code, 200)
-        self.assertTrue('Handle invitation called' in res.content, res.content)
+        self.assertIn('Handle invitation called', res.content)
         self.assertTrue(
             FacebookInvitation.objects
             .get(request_id=self.invitation.request_id)
@@ -454,8 +454,8 @@ class FacebookInvitationMixinTest(TestCase):
         })
 
         self.assertEqual(res.status_code, 302)
-        self.assertTrue('request_ids' in res.get('Location'))
-        self.assertTrue(str(self.invitation.request_id) in res.get('Location'))
+        self.assertIn('request_ids', res.get('Location'))
+        self.assertIn(str(self.invitation.request_id), res.get('Location'))
 
 
 @patch('requests.post', return_value=FakeResponse(200))
