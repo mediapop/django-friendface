@@ -1,3 +1,6 @@
+dependencies:
+  ovrride:
+    - make develop
 test:
   override:
     - make test
