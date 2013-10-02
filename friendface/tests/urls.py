@@ -1,6 +1,6 @@
 from django.conf.urls import patterns, include, url
 
-from test.views import FacebookInvitationHandler
+from views import FacebookInvitationHandler
 from friendface.views import FacebookApplicationInstallRedirectView
 
 urlpatterns = patterns(
