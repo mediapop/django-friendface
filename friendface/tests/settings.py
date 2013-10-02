@@ -27,7 +27,6 @@ INSTALLED_APPS = [
     'django.contrib.sitemaps',
     'django.contrib.sites',
 
-    'friendface.tests.accounts',
     'friendface',
 ]
 
@@ -44,5 +43,3 @@ SECRET_KEY = 'foobar'
 TEST_RUNNER = 'discover_runner.DiscoverRunner'
 
 ROOT_URLCONF = 'friendface.tests.urls'
-
-AUTH_PROFILE_MODULE = 'accounts.UserProfile'
