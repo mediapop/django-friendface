@@ -1,11 +1,10 @@
 # -*- encoding: utf-8 -*-
 import os
 import urllib
-import unittest
 
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.auth.models import User
-from django.core.urlresolvers import reverse, NoReverseMatch
+from django.core.urlresolvers import reverse
 from django.http import HttpRequest, HttpResponse
 from django.test.testcases import TestCase
 from django.views.generic import View
@@ -16,11 +15,13 @@ from testfixtures import LogCapture
 
 from friendface import tasks
 from friendface.fixtures import (create_user, FacebookApplicationFactory,
-                                 FacebookInvitationFactory, FacebookPageFactory)
+                                 FacebookInvitationFactory,
+                                 FacebookPageFactory)
 from friendface.models import (FacebookApplication, FacebookAuthorization,
                                FacebookUser, FacebookInvitation)
 from friendface.shortcuts import rescrape_url, ScrapingError
 from friendface.views import FacebookAppAuthMixin, FacebookPostAsGetMixin
+
 
 # If a response for requests needs to be faked, add on and use this
 class FakeResponse(object):
@@ -223,6 +224,7 @@ class FacebookAuthorizationMixinTestCase(TestCase):
             'externalhit_uatext.php)'
         )
         self.request.method = 'get'
+
         class TestView(FacebookAppAuthMixin, View):
             def get(self, request, *args, **kwargs):
                 return HttpResponse('OK')
@@ -238,6 +240,7 @@ class environment:
     with environment({'HTTPS': 'off'}):
        pass
     """
+
     def __init__(self, envs):
         self.envs = envs
 
@@ -341,8 +344,7 @@ class FacebookApplicationInstallRedirectViewTest(TestCase):
                                       kwargs=dict(application_id=self.app.id)))
         self.assertEqual(res.status_code, 302)
         self.assertTrue('facebook.com/dialog/pagetab' in res.get('Location'))
-        self.assertTrue('app_id={0}'.format(self.app.pk)
-                        in res.get('Location'))
+        self.assertIn('app_id={0}'.format(self.app.pk), res.get('Location'))
 
     def test_should_raise_400_on_invalid_app_id(self):
         res = self.client.get(reverse('friendface.views.install',
@@ -392,9 +394,10 @@ class FacebookInvitationMixinTest(TestCase):
         self.assertTrue(self.client.login(facebook_user=self.fb_user))
         res = self.client.get(self.URL)
         self.assertEqual(res.status_code, 200)
-        self.assertFalse(FacebookInvitation.objects
-                         .exclude(accepted=None)
-                         .exists())
+        self.assertFalse(
+            FacebookInvitation.objects.exclude(accepted=None)
+            .exists()
+        )
 
     def test_vanilla_authed_user_accept_invitation(self, _):
         self.assertTrue(self.client.login(facebook_user=self.fb_user))
@@ -402,9 +405,11 @@ class FacebookInvitationMixinTest(TestCase):
             'request_ids': self.invitation.request_id
         })
         self.assertEqual(res.status_code, 200)
-        self.assertTrue(FacebookInvitation.objects
-                        .get(request_id=self.invitation.request_id)
-                        .accepted)
+        self.assertTrue(
+            FacebookInvitation.objects
+            .get(request_id=self.invitation.request_id)
+            .accepted
+        )
 
     def test_vanilla_authed_accept_calls_handle_invitation(self, _):
         self.assertTrue(self.client.login(facebook_user=self.fb_user))
@@ -413,9 +418,11 @@ class FacebookInvitationMixinTest(TestCase):
         })
         self.assertEqual(res.status_code, 200)
         self.assertTrue('Handle invitation called' in res.content, res.content)
-        self.assertTrue(FacebookInvitation.objects
-                        .get(request_id=self.invitation.request_id)
-                        .accepted)
+        self.assertTrue(
+            FacebookInvitation.objects
+            .get(request_id=self.invitation.request_id)
+            .accepted
+        )
 
     def test_accept_invitation_delete_from_facebook(self, mocked):
         self.assertTrue(self.client.login(facebook_user=self.fb_user))
@@ -455,6 +462,7 @@ class FacebookInvitationMixinTest(TestCase):
 class Rescraping(TestCase):
     """Not much to test with this one, but a start for expected behavior
     right now"""
+
     def test_should_raise_assertion_error_when_not_absolute_url(self, _):
         self.assertRaises(ValueError, rescrape_url, 'fake-url')
 
@@ -481,12 +489,12 @@ class Rescraping(TestCase):
     def test_task_unsuccessfull_invalid_url(self, _):
         url = 'invalid-url'
         with LogCapture() as l:
-            tasks.rescrape_urls([url,])
+            tasks.rescrape_urls([url, ])
 
             correct_message = False
             for record in l.records:
-                if(record.msg == ('Failed to tell Facebook to rescrape '
-                                  'URL "%s"')):
+                if (record.msg == ('Failed to tell Facebook to rescrape '
+                                   'URL "%s"')):
                     correct_message = True
             self.assertTrue(correct_message, 'Error message not logged')
 
@@ -496,9 +504,9 @@ class Rescraping(TestCase):
 
         with patch('requests.post', return_value=FakeResponse(404, json)):
             with LogCapture() as l:
-                tasks.rescrape_urls([url,])
+                tasks.rescrape_urls([url, ])
 
                 for record in l.records:
-                    if(record.msg == ('Failed to tell Facebook to rescrape '
-                                      'URL "{0}"'.format(url))):
+                    if (record.msg == ('Failed to tell Facebook to rescrape '
+                                       'URL "{0}"'.format(url))):
                         self.assertEqual(record.facebook_response, json)
