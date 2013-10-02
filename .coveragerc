@@ -1,2 +1,2 @@
 [run]
-omit = github/migrations*
+omit = friendface/migrations*
