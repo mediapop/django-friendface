@@ -36,10 +36,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'friendface.middleware.FacebookApplicationMiddleware',
-    'friendface.middleware.FacebookDecodingMiddleware',
-    'friendface.middleware.DisableCsrfProtectionOnDecodedSignedRequest',
-    'friendface.middleware.FacebookSignedRequestAuthenticationMiddleware',
+    'friendface.middleware.FacebookMiddleware',
 )
 
 SECRET_KEY = 'foobar'
