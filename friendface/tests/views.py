@@ -29,8 +29,3 @@ class TestFacebookPostAsGetMixinView(FacebookPostAsGetMixin, View):
 class FacebookAuthView(FacebookAppAuthMixin, View):
     def get(self, request, *args, **kwargs):
         return HttpResponse("get")
-
-
-class FacebookMobileView(View):
-    def get(self, request, *args, **kwargs):
-        return HttpResponse("get")
