@@ -18,16 +18,15 @@ class FacebookContext(object):
         # If we have a user_id in the request:
         # 1. Attempt to get the user.
         # 2. If the user doesn't exist. Log the current user out.
-        application = self.application()
 
         # Safari doesn't set third party cookies, so we shouldn't authenticate
         # users that don't have cookies, as the logged in user won't be visible
         # in future AJAX calls.
         cookies_enabled = bool(self.django_request.COOKIES)
-        if cookies_enabled and (self.request() or {}).get('user_id'):
-            user_id = self.request().get('user_id')
+        if cookies_enabled and (self.request or {}).get('user_id'):
+            user_id = self.request.get('user_id')
             try:
-                user = application.facebookuser_set.get(uid=user_id)
+                user = self.application.facebookuser_set.get(uid=user_id)
             except FacebookUser.DoesNotExist:
                 pass
             else:
@@ -39,8 +38,8 @@ class FacebookContext(object):
 
                 return user
         try:
-            return self.application().facebookuser_set.get(
-                user=self.request.user
+            return self.application.facebookuser_set.get(
+                user=self.django_request.user
             )
         except FacebookUser.DoesNotExist:
             return None
@@ -49,11 +48,11 @@ class FacebookContext(object):
     def request(self):
         signed_request = self.django_request.POST.get('signed_request')
         if signed_request:
-            return self.application().decode(signed_request)
+            return self.application.decode(signed_request)
 
     @memoize
     def page(self):
-        page_id = (self.request() or {}).get('page').get('id')
+        page_id = (self.request or {}).get('page').get('id')
         if page_id:
             return FacebookPage.objects.get(pk=page_id)
 
@@ -63,7 +62,7 @@ class FacebookMiddleware(object):
         setattr(request, 'facebook', FacebookContext(request))
 
         # Disable CSRF protection for requests originating from facebook.
-        if request.facebook.request():
+        if request.facebook.request:
             request.META['CSRF_COOKIE'] = _get_new_csrf_key()
             request.csrf_processing_done = True
 

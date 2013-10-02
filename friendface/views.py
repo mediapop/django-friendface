@@ -126,7 +126,7 @@ def record_facebook_invitation(request):
     if not request_id:
         return HttpResponseBadRequest('No request set.')
     try:
-        request.facebook.user()
+        request.facebook.user
     except FacebookUser.DoesNotExist:
         HttpResponse(json.dumps({'result': 'error',
                                  'error': 'no friendface user'}),
@@ -137,8 +137,8 @@ def record_facebook_invitation(request):
         FacebookInvitation.create_with_receiver(
             receiver=recipient,
             request_id=request_id,
-            application=request.facebook.application(),
-            sender=request.facebook.user(),
+            application=request.facebook.application,
+            sender=request.facebook.user,
             next=request.POST.get('next', ''))
 
     return HttpResponse(json.dumps({'result': 'ok'}),
@@ -155,7 +155,7 @@ class FacebookPostAsGetMixin(object):
         if mobile and mobile.lower() == 'true':
             request.session['is_facebook_mobile'] = True
 
-        if request.facebook.request():
+        if request.facebook.request:
             if not hasattr(self, 'get'):
                 raise ImproperlyConfigured("FacebookPostAsGetMixin needs a "
                                            "get method to dispatch to")
@@ -221,9 +221,9 @@ class FacebookAppAuthMixin(object):
 
         session = getattr(self.request, 'session', {})
 
-        if self.request.facebook.decode() and \
+        if self.request.facebook.request and \
                 not session.get('is_facebook_mobile'):
-            return self.request.facebook.application().build_canvas_url(
+            return self.request.facebook.application.build_canvas_url(
                 self.request.get_full_path()
             )
         else:
@@ -243,13 +243,15 @@ class FacebookAppAuthMixin(object):
         # continue on and let it see the page (and read the sharing message)
         if request.META.get('HTTP_USER_AGENT',
                             '').startswith(FACEBOOK_USER_AGENT) or \
-                self.request.user():
+                self.request.user.is_authenticated():
             return super(FacebookAppAuthMixin, self).dispatch(
                 request, *args, **kwargs
             )
 
         auth_url = self.get_auth_url()
-        return self.redirect(request.facebook.get_authorize_url(auth_url))
+        return self.redirect(request.facebook.application.get_authorize_url(
+            auth_url
+        ))
 
 
 class FacebookApplicationInstallRedirectView(RedirectView):
@@ -281,9 +283,9 @@ class FacebookApplicationInstallRedirectView(RedirectView):
             except FacebookApplication.DoesNotExist:
                 return HttpResponseBadRequest('No application with that id.')
         else:
-            if hasattr(request, 'facebook'):
-                self.application = request.facebook.application()
-            else:
+            try:
+                self.application = request.facebook.application
+            except FacebookApplication.DoesNotExist:
                 return HttpResponseBadRequest('No app configured on this URL.')
 
         return (super(FacebookApplicationInstallRedirectView, self)
@@ -332,12 +334,12 @@ class FacebookInvitationMixin(object):
         # If the user is not authenticated just return and let
         # FacebookAppAuthMixin deal with getting us an authed user.
         if(not request.user.is_authenticated()
-           or not request.facebook.user()):
+           or not request.facebook.user):
             return super(FacebookInvitationMixin, self).dispatch(
                 request, *args, **kwargs
             )
 
-        facebook_user = request.facebook.user()
+        facebook_user = request.facebook.user
         next_url = None
         for request_id in request_ids.split(','):
             try:
@@ -400,12 +402,12 @@ class FacebookInvitationCreateView(View):
         request = self.request.POST.get('request')
         if not request:
             raise ValueError('No request id specified')
-        fb_user = self.request.facebook.user()
+        fb_user = self.request.facebook.user
 
         context.update({
             'request_id': request,
             'sender': fb_user,
-            'application': self.request.facebook.application(),
+            'application': self.request.facebook.application,
             'next': self.request.POST.get('next', ''),
             'invitations': []
         })
@@ -459,7 +461,7 @@ class LikeGateMixin(object):
         self.args = args
         self.kwargs = kwargs
 
-        page = request.facebook.request().get('page', {})
+        page = request.facebook.request.get('page', {})
         like_gate_target = self.get_like_gate_target()
         if(page and not page['liked']
            and (not like_gate_target or int(page['id']) == like_gate_target)):
@@ -467,7 +469,7 @@ class LikeGateMixin(object):
                           self.get_like_gate_template(),
                           self.get_context_data(**kwargs))
         elif like_gate_target and int(page.get('id', 0)) != like_gate_target:
-            facebook_user = request.facebook.user()
+            facebook_user = request.facebook.user
             try:
                 if facebook_user is None:
                     raise ObjectDoesNotExist
