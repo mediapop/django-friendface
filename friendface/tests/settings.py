@@ -46,8 +46,6 @@ SECRET_KEY = 'foobar'
 
 TEST_RUNNER = 'discover_runner.DiscoverRunner'
 
-TEMPLATE_DIRS = (os.path.join(APP_ROOT, 'templates'),)
-
 ROOT_URLCONF = 'friendface.tests.urls'
 
 AUTH_PROFILE_MODULE = 'accounts.UserProfile'
