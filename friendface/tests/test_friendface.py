@@ -40,19 +40,6 @@ TEST_USER = {
 }
 
 
-def old_fixture_equivalent():
-    return FacebookApplicationFactory.create(
-        id=1,
-        name='foo',
-        secret='bar',
-        namespace='mhe',
-        canvas_url='http://testserver/',
-        secure_canvas_url='https://testserver/',
-        link=('http://www.facebook.com/apps/application.php?'
-              'id=382752368461014')
-    )
-
-
 @patch.object(FacebookAuthorization, 'get_access_token', lambda _, a: "truthy")
 @patch.object(GraphAPI, 'get_object', lambda _, a: TEST_USER)
 class FacebookAuthorizedTestCase(TestCase):
@@ -80,33 +67,30 @@ class FacebookAuthorizedTestCase(TestCase):
 
 class FacebookApplicationTestCase(TestCase):
     def setUp(self):
-        old_fixture_equivalent()  # for old tests to work
+        self.app = FacebookApplicationFactory(link='/foo/',
+                                              canvas_url='http://testserver/')
 
     def test_authorize_url(self):
-        app = FacebookApplication.objects.get()
-        self.assertEqual(app.facebookauthorization_set.count(), 0)
-        response = self.client.get(path=app.get_authorize_url())
+        self.assertFalse(self.app.facebookauthorization_set.exists())
+        response = self.client.get(path=self.app.get_authorize_url())
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(app.facebookauthorization_set.count(), 1)
+        self.assertTrue(self.app.facebookauthorization_set.exists())
 
     def test_authorize_url_next(self):
-        app = FacebookApplication.objects.get()
-        self.assertEqual(app.facebookauthorization_set.count(), 0)
+        self.assertFalse(self.app.facebookauthorization_set.exists())
         next = 'http://www.google.com'
-        self.client.get(path=app.get_authorize_url(next))
-        auth = app.facebookauthorization_set.get()
+        self.client.get(path=self.app.get_authorize_url(next))
+        auth = self.app.facebookauthorization_set.get()
         self.assertEqual(next, auth.next)
 
     def test_build_canvas_url(self):
-        app = FacebookApplication.objects.get()
-        self.assertEqual("https://apps.facebook.com/%s/" % app.namespace,
-                         app.build_canvas_url())
+        self.assertEqual("https://apps.facebook.com/%s/" % self.app.namespace,
+                         self.app.build_canvas_url())
 
     def test_build_non_namespace_canvas_url(self):
-        app = FacebookApplication.objects.get()
-        app.namespace = None
-        self.assertEqual("https://apps.facebook.com/%s/" % app.id,
-                         app.build_canvas_url())
+        self.app.namespace = None
+        self.assertEqual("https://apps.facebook.com/%s/" % self.app.id,
+                         self.app.build_canvas_url())
 
 
 class FacebookPostAsGetMixinTestCase(TestCase):
@@ -198,7 +182,7 @@ class environment:
 
 class FacebookApplicationMatchingTestCase(TestCase):
     def setUp(self):
-        old_fixture_equivalent()  # for old tests to work
+        self.app = FacebookApplicationFactory()
         self.request = HttpRequest()
         self.request.path = '/foo'
         self.request.META = {'SERVER_NAME': 'www.foo.com', 'SERVER_PORT': 80}
