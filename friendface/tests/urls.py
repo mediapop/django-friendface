@@ -7,10 +7,7 @@ from friendface.views import FacebookApplicationInstallRedirectView, MobileView
 urlpatterns = patterns(
     '',
     url(r'facebook/', include('friendface.urls')),
-)
 
-urlpatterns += patterns(
-    'friendface.views',
     url('^install/$', FacebookApplicationInstallRedirectView.as_view(),
         name='friendface.views.install'),
     url('^invitation-handler/$', FacebookInvitationHandler.as_view(),
