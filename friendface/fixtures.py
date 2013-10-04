@@ -5,7 +5,7 @@ import factory
 from mock import Mock
 
 from .models import (FacebookApplication, FacebookInvitation, FacebookUser,
-                     FacebookPage, PageAdmin)
+                     FacebookPage, PageAdmin, FacebookAuthorization)
 
 
 def random_hex_string(length, max_length=None):
@@ -146,3 +146,11 @@ class FacebookInvitationFactory(DontRunPreSaveMixin,
         FacebookUserFactory,
         application=factory.SelfAttribute('..application')
     )
+
+
+class FacebookAuthorizationFactory(DontRunPreSaveMixin,
+                                   factory.DjangoModelFactory):
+    FACTORY_FOR = FacebookAuthorization
+
+    application = factory.SubFactory(FacebookApplicationFactory)
+    next = 'http://www.google.com'

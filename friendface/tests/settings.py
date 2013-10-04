@@ -18,7 +18,6 @@ AUTHENTICATION_BACKENDS = (
 
 INSTALLED_APPS = [
     'django.contrib.admin',
-    'django.contrib.admindocs',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.messages',
@@ -43,3 +42,5 @@ SECRET_KEY = 'foobar'
 TEST_RUNNER = 'discover_runner.DiscoverRunner'
 
 ROOT_URLCONF = 'friendface.tests.urls'
+
+STATIC_URL = '/static/'

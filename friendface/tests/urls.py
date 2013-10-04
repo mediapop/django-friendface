@@ -1,11 +1,15 @@
 from django.conf.urls import patterns, include, url
+from django.contrib import admin
 from views import TestFacebookPostAsGetMixinView, FacebookAuthView
 
 from views import FacebookInvitationHandler
 from friendface.views import FacebookApplicationInstallRedirectView, MobileView
 
+admin.autodiscover()
+
 urlpatterns = patterns(
     '',
+    url(r'^admin/', include(admin.site.urls)),
     url(r'facebook/', include('friendface.urls')),
 
     url('^install/$', FacebookApplicationInstallRedirectView.as_view(),
