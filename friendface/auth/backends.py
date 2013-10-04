@@ -1,5 +1,7 @@
-from django.contrib.auth.models import User
 from friendface.models import FacebookUser
+from friendface.utils import get_user_model
+
+User = get_user_model()
 
 
 class FacebookBackend(object):

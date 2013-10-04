@@ -2,7 +2,6 @@
 import os
 import urllib
 
-from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.http import HttpRequest
 from django.test.testcases import TestCase
@@ -20,6 +19,7 @@ from friendface.middleware import FacebookContext
 from friendface.models import (FacebookApplication, FacebookAuthorization,
                                FacebookUser, FacebookInvitation)
 from friendface.shortcuts import rescrape_url, ScrapingError
+from friendface.utils import get_user_model
 
 
 # If a response for requests needs to be faked, add on and use this
@@ -38,6 +38,8 @@ TEST_USER = {
     'last_name': 'Sunde',
     'email': 'foo@foo.com'
 }
+
+User = get_user_model()
 
 
 @patch.object(FacebookAuthorization, 'get_access_token', lambda _, a: "truthy")

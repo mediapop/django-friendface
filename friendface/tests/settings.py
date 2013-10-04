@@ -27,6 +27,8 @@ INSTALLED_APPS = [
     'django.contrib.sites',
 
     'friendface',
+
+    'friendface.tests.account',
 ]
 
 MIDDLEWARE_CLASSES = (
@@ -44,3 +46,5 @@ TEST_RUNNER = 'discover_runner.DiscoverRunner'
 ROOT_URLCONF = 'friendface.tests.urls'
 
 STATIC_URL = '/static/'
+
+AUTH_USER_MODEL = os.environ.get('AUTH_USER_MODEL', 'auth.User')

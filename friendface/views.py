@@ -3,7 +3,6 @@ import random
 import urllib2
 
 from django.contrib.auth import authenticate, login
-from django.contrib.auth.models import User
 from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render, redirect
@@ -15,6 +14,9 @@ from django.views.generic import RedirectView, TemplateView, View
 from friendface.models import (FacebookApplication, FacebookAuthorization,
                                FacebookUser, FacebookInvitation)
 from friendface.shortcuts import redirectjs
+from friendface.utils import get_user_model
+
+User = get_user_model()
 
 # Match Facebook user agents for places where special logic is needed.
 FACEBOOK_USER_AGENT = 'facebookexternalhit'

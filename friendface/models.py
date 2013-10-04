@@ -3,6 +3,7 @@ import logging
 import urllib
 import urllib2
 import urlparse
+from django.conf import settings
 
 from django.core.urlresolvers import reverse
 from django.db import models
@@ -18,6 +19,9 @@ from model_utils.fields import MonitorField
 from friendface.shortcuts import rescrape_url
 
 logger = logging.getLogger('friendface')
+
+# 1.4 Compatibility
+AUTH_USER_MODEL = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
 
 
 class FacebookRequestMixin(object):
@@ -57,7 +61,7 @@ class AccessTokenMixin(models.Model):
 
 
 class FacebookUser(AccessTokenMixin, models.Model, FacebookRequestMixin):
-    user = models.ForeignKey('auth.User', null=True, blank=True)
+    user = models.ForeignKey(AUTH_USER_MODEL, null=True, blank=True)
     created = models.DateTimeField(auto_now_add=True)
     uid = models.BigIntegerField()
     application = models.ForeignKey('FacebookApplication')
@@ -79,7 +83,7 @@ class FacebookUser(AccessTokenMixin, models.Model, FacebookRequestMixin):
         'FacebookPage', through='PageAdmin',
         help_text='The pages this user is admin for'
     )
-    user = models.ForeignKey('auth.User',
+    user = models.ForeignKey(AUTH_USER_MODEL,
                              blank=True,
                              null=True,
                              related_name='facebookusers')

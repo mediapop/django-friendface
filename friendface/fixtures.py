@@ -1,11 +1,13 @@
-from django.contrib.auth.models import User
 from random import randrange
 
 import factory
 from mock import Mock
+from friendface.utils import get_user_model
 
 from .models import (FacebookApplication, FacebookInvitation, FacebookUser,
                      FacebookPage, PageAdmin, FacebookAuthorization)
+
+User = get_user_model()
 
 
 def random_hex_string(length, max_length=None):

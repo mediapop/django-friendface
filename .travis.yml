@@ -4,6 +4,7 @@ python:
 env:
   - DJANGO_VERSION=1.4.8
   - DJANGO_VERSION=1.5.4
+  - DJANGO_VERSION=1.5.4 AUTH_USER_MODEL=account.CustomUser
 install:
   - pip install Django==$DJANGO_VERSION
   - make develop

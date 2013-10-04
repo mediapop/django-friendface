@@ -1,9 +1,11 @@
-from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.test import TestCase
 from friendface.fixtures import FacebookPageFactory, \
     FacebookApplicationFactory, FacebookUserFactory, \
     FacebookInvitationFactory, FacebookAuthorizationFactory
+from friendface.utils import get_user_model
+
+User = get_user_model()
 
 
 class TestFacebookPageAdmin(TestCase):
