@@ -14,7 +14,8 @@ from testfixtures import LogCapture
 from friendface import tasks
 from friendface.fixtures import (create_user, FacebookApplicationFactory,
                                  FacebookInvitationFactory,
-                                 FacebookPageFactory)
+                                 FacebookPageFactory,
+                                 FacebookAuthorizationFactory)
 from friendface.middleware import FacebookContext
 from friendface.models import (FacebookApplication, FacebookAuthorization,
                                FacebookUser, FacebookInvitation)
@@ -52,41 +53,29 @@ def old_fixture_equivalent():
     )
 
 
+@patch.object(FacebookAuthorization, 'get_access_token', lambda _, a: "truthy")
+@patch.object(GraphAPI, 'get_object', lambda _, a: TEST_USER)
 class FacebookAuthorizedTestCase(TestCase):
     def setUp(self):
-        old_fixture_equivalent()  # for old tests to work
-        patcher = patch.object(FacebookAuthorization,
-                               'get_access_token',
-                               lambda a, b: u'☃')
-        patcher.start()
-        self.addCleanup(patcher.stop)
-        patcher = patch.object(GraphAPI, 'get_object', lambda a, b: TEST_USER)
-        patcher.start()
-        self.addCleanup(patcher.stop)
-
-        app = FacebookApplication.objects.get()
-        self.auth = FacebookAuthorization.objects.create(application=app,
-                                                         next='/',
-                                                         scope='',
-                                                         redirect_uri='')
+        self.auth = FacebookAuthorizationFactory()
 
     def test_creates_facebook_user_if_not_exists(self):
-        self.assertEqual(FacebookUser.objects.count(), 0)
+        self.assertFalse(FacebookUser.objects.exists())
         self.client.get(self.auth.get_absolute_url())
-        self.assertEqual(FacebookUser.objects.count(), 1)
+        self.assertTrue(FacebookUser.objects.exists())
 
     def test_creates_new_user_if_not_exists(self):
-        self.assertEqual(User.objects.count(), 0)
+        self.assertFalse(User.objects.exists())
         self.client.get(self.auth.get_absolute_url())
-        self.assertEqual(User.objects.count(), 1)
+        self.assertTrue(User.objects.exists())
 
     def test_creating_user_sets_details_from_facebook(self):
         self.client.get(self.auth.get_absolute_url())
-        user = User.objects.get()
         facebook_user = FacebookUser.objects.get()
-        self.assertEqual(user.email, facebook_user.email)
-        self.assertEqual(user.first_name, facebook_user.first_name)
-        self.assertEqual(user.last_name, facebook_user.last_name)
+        self.assertTrue(User.objects.filter(
+            email=facebook_user.email,
+            first_name=facebook_user.email,
+            last_name=facebook_user.last_name).exists())
 
 
 class FacebookApplicationTestCase(TestCase):
