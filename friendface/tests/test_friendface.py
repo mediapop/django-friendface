@@ -74,7 +74,7 @@ class FacebookAuthorizedTestCase(TestCase):
         facebook_user = FacebookUser.objects.get()
         self.assertTrue(User.objects.filter(
             email=facebook_user.email,
-            first_name=facebook_user.email,
+            first_name=facebook_user.first_name,
             last_name=facebook_user.last_name).exists())
 
 
