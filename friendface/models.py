@@ -301,7 +301,8 @@ class FacebookApplication(AccessTokenMixin, models.Model,
                           getattr(app, canvas), getattr(app, page_tab))
 
             for url in match_urls:
-                if not url: continue
+                if not url:
+                    continue
                 match_path = urlparse.urlparse(url).path
 
                 if current_url.path.startswith(match_path):
@@ -309,14 +310,16 @@ class FacebookApplication(AccessTokenMixin, models.Model,
                         longest_match = len(match_path)
                         match = app
 
-        if not match: raise FacebookApplication.DoesNotExist
+        if not match:
+            raise FacebookApplication.DoesNotExist
 
         return match
 
     def build_canvas_url(self, location=None):
         """Takes the URL relative to Django and turns it into a URL
         relative this facebook apps canvas page."""
-        if not self.canvas_url: return None
+        if not self.canvas_url:
+            return None
         if location is None:
             return "https://apps.facebook.com/{0}/".format(self.namespace or
                                                            self.id)
@@ -375,11 +378,10 @@ class FacebookApplication(AccessTokenMixin, models.Model,
         return authorize_url
 
     def get_installation_url(self, redirect_field='secure_canvas_url'):
-        return ('https://www.facebook.com/dialog/pagetab'
-                '?app_id={0}&redirect_uri={1}').format(
-                    self.pk,
-                    getattr(self, redirect_field)
-                )
+        return (
+            'https://www.facebook.com/dialog/pagetab'
+            '?app_id={0}&redirect_uri={1}'
+        ).format(self.pk, getattr(self, redirect_field))
 
     def decode(self, signed_request):
         return parse_signed_request(signed_request, str(self.secret))
