@@ -5,7 +5,7 @@ import factory
 from mock import Mock
 
 from .models import (FacebookApplication, FacebookInvitation, FacebookUser,
-                     FacebookPage, PageAdmin)
+                     FacebookPage, PageAdmin, FacebookTab)
 
 
 def random_hex_string(length, max_length=None):
@@ -124,6 +124,13 @@ class FacebookUserFactory(factory.DjangoModelFactory):
 class FacebookPageFactory(DontRunPreSaveMixin, factory.DjangoModelFactory):
     FACTORY_FOR = FacebookPage
     id = 1
+
+
+class FacebookTabFactory(factory.DjangoModelFactory):
+    FACTORY_FOR = FacebookTab
+
+    application = factory.SubFactory(FacebookApplicationFactory)
+    page = factory.SubFactory(FacebookPageFactory)
 
 
 class PageAdminFactory(factory.DjangoModelFactory):
