@@ -15,12 +15,12 @@ install_requires = [
     'requests>=1.0.0',
     'pytz',
     'django-model-utils',
-    'django>=1.4,<1.6',
+    'django>=1.4,<1.7',
 ]
 
 tests_requires = [
     'mock',
-    'django>=1.4,<1.6',
+    'django>=1.4,<1.7',
     'django-discover-runner',
     'factory-boy',
     'coverage',
