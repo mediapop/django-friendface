@@ -1,4 +1,5 @@
 import os
+import django
 
 SITE_ID = 1
 
@@ -41,7 +42,9 @@ MIDDLEWARE_CLASSES = (
 
 SECRET_KEY = 'foobar'
 
-TEST_RUNNER = 'discover_runner.DiscoverRunner'
+
+if django.get_version() < "1.6":
+    TEST_RUNNER = 'discover_runner.DiscoverRunner'
 
 ROOT_URLCONF = 'friendface.tests.urls'
 
