@@ -23,9 +23,16 @@ request.
     )
 
     AUTHENTICATION_BACKENDS += ('friendface.auth.backends.FacebookBackend',)
+    
+urls.py
 
-    Each application you want to use you need to setup in the django admin.
-    Once saved the application will request all of its details from Facebook.
+    urlpatterns = patterns(
+        url(r'^facebook/', include('friendface.urls'))
+        ...
+    )
+
+For each facebook  application you want to use you'll need to add in in the 
+django admin. Once saved the application will request all of its details from Facebook.
 
 
 # Usage
