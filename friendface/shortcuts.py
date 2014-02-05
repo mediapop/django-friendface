@@ -32,6 +32,7 @@ def rescrape_url(url):
         'id': url,
         'scrape': 'true',
     })
+    logger.debug("Facebook replied %s", res)
 
     if res.status_code == requests.codes.ok:
         return True
