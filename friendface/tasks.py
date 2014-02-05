@@ -3,23 +3,29 @@ import logging
 logger = logging.getLogger('friendface')
 
 try:
-    from celery import task
+    # New style reusable app task import
+    from celery import shared_task as task
 except ImportError:
-    # To replicate the behavior of celery as close as possible so we
-    # can still prepare as tasks even if celery isn't actually
-    # installed or used.
-    def task(*args, **kwargs):
-        class Inner(object):
-            def __init__(self, func):
-                self.func = func
+    try:
+        # Old style celery task import
+        from celery import task
+    except ImportError:
+        # To replicate the behavior of celery as close as possible so we
+        # can still prepare as tasks even if celery isn't actually
+        # installed or used.
 
-            def __call__(self, *a, **kwa):
-                return self.func(*a, **kwa)
+        def task(*args, **kwargs):
+            class Inner(object):
+                def __init__(self, func):
+                    self.func = func
 
-            def __getattr__(self, name):
-                return self.func
+                def __call__(self, *a, **kwa):
+                    return self.func(*a, **kwa)
 
-        return Inner
+                def __getattr__(self, name):
+                    return self.func
+
+            return Inner
 
 from friendface.shortcuts import rescrape_url, ScrapingError
 
