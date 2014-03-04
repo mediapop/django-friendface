@@ -21,6 +21,9 @@ request.
         'friendface.middleware.FacebookMiddleware',
         ...
     )
+    # Ensure that django.middleware.clickjacking.XFrameOptionsMiddleware is not amongst the middlewares,
+    # it doesn't work with Facebook apps because they are included from inside an iframe.
+    # From Django 1.6 it is enabled by default.
 
     AUTHENTICATION_BACKENDS += ('friendface.auth.backends.FacebookBackend',)
     
