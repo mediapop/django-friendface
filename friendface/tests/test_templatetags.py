@@ -7,7 +7,7 @@ from friendface.fixtures import create_user
 class TemplateTagsTest(TestCase):
     def setUp(self):
         create_user(application_kwargs={
-            'canvas_url': 'http://somewhere.sg/'
+            'canvas_url': 'http://example.com/'
         })
 
     def test_should_render_template_tag(self):
