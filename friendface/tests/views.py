@@ -1,4 +1,5 @@
 from django.http import HttpResponse
+from django.template import RequestContext, Template
 from django.views.generic import View
 
 from friendface.views import FacebookHandleInvitationMixin, \
@@ -29,3 +30,12 @@ class TestFacebookPostAsGetMixinView(FacebookPostAsGetMixin, View):
 class FacebookAuthView(FacebookAppAuthMixin, View):
     def get(self, request, *args, **kwargs):
         return HttpResponse("get")
+
+
+def show_template_tag(request):
+    """Render a working fburl"""
+    t = Template("{% load facebook %}"
+                 "{% fburl 'facebook_post_as_get_mixin' %}")
+    c = RequestContext(request, {'request': request})
+
+    return HttpResponse(t.render(c))
