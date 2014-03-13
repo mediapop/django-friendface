@@ -21,6 +21,8 @@ from friendface.models import (FacebookApplication, FacebookAuthorization,
 from friendface.shortcuts import rescrape_url, ScrapingError
 from friendface.utils import get_user_model
 
+from .views import FacebookLikeGate
+
 
 # If a response for requests needs to be faked, add on and use this
 class FakeResponse(object):
@@ -440,3 +442,38 @@ class Rescraping(TestCase):
                     if (record.msg == ('Failed to tell Facebook to rescrape '
                                        'URL "{0}"'.format(url))):
                         self.assertEqual(record.facebook_response, json)
+
+
+class LikeGate(TestCase):
+    def setUp(self):
+        self.url = reverse('like-gate-test')
+        self.fb_user, self.user, self.app = create_user(True)
+        self.signed_request = {
+            'page': {'liked': False}
+        }
+
+    def _signed_request(self, url, signed_request, data={}):
+        data['signed_request'] = signed_request
+
+        with patch('friendface.models.FacebookApplication.decode') as mock:
+            mock.return_value = signed_request
+
+            return self.client.post(url, data)
+
+    def test_should_not_do_anything_when_no_valid_signed_request(self):
+        res = self.client.get(self.url)
+
+        self.assertEqual(res.status_code, 200)
+
+    def test_should_show_like_gate_when_not_liked(self):
+        res = self._signed_request(self.url, self.signed_request)
+
+        self.assertEqual(res.status_code, 200)
+        self.assertTemplateUsed(FacebookLikeGate.like_gate_template)
+
+    def test_should_not_show_like_gate_when_liked(self):
+        self.signed_request['page']['liked'] = True
+        res = self._signed_request(self.url, self.signed_request)
+
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.content, 'Welcome, friend.')

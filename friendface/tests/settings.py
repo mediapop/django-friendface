@@ -50,6 +50,10 @@ ROOT_URLCONF = 'friendface.tests.urls'
 
 STATIC_URL = '/static/'
 
+TEMPLATE_DIRS = (
+    APP_ROOT + '/templates/',
+)
+
 AUTH_USER_MODEL = os.environ.get('AUTH_USER_MODEL', 'auth.User')
 
 PASSWORD_HASHERS = (

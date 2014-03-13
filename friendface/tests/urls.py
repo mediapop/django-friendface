@@ -1,9 +1,15 @@
 from django.conf.urls import patterns, include, url
 from django.contrib import admin
-from views import TestFacebookPostAsGetMixinView, FacebookAuthView
 
-from .views import FacebookInvitationHandler, show_template_tag
 from friendface.views import FacebookApplicationInstallRedirectView, MobileView
+
+from .views import (
+    FacebookAuthView,
+    FacebookInvitationHandler,
+    FacebookLikeGate,
+    TestFacebookPostAsGetMixinView,
+    show_template_tag,
+)
 
 admin.autodiscover()
 
@@ -21,4 +27,5 @@ urlpatterns = patterns(
     url('^auth-view$', FacebookAuthView.as_view(), name='auth_view'),
     url('^mobile/auth-view$', MobileView.as_view(), name='mobile_view'),
     url('^test-templatetag$', show_template_tag, name='template_tag'),
+    url('^test-like-gate$', FacebookLikeGate.as_view(), name='like-gate-test'),
 )

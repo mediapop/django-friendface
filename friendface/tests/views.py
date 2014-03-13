@@ -2,8 +2,10 @@ from django.http import HttpResponse
 from django.template import RequestContext, Template
 from django.views.generic import View
 
-from friendface.views import FacebookHandleInvitationMixin, \
-    FacebookPostAsGetMixin, FacebookAppAuthMixin
+from friendface.views import (
+    FacebookHandleInvitationMixin, FacebookPostAsGetMixin,
+    FacebookAppAuthMixin, LikeGateMixin
+)
 
 
 class FacebookInvitationHandler(FacebookHandleInvitationMixin, View):
@@ -30,6 +32,16 @@ class TestFacebookPostAsGetMixinView(FacebookPostAsGetMixin, View):
 class FacebookAuthView(FacebookAppAuthMixin, View):
     def get(self, request, *args, **kwargs):
         return HttpResponse("get")
+
+
+class FacebookLikeGate(LikeGateMixin, FacebookPostAsGetMixin, View):
+    like_gate_template = 'like-gate.html'
+
+    def get_context_data(self, **kwargs):
+        return {}
+
+    def get(self, request, *args, **kwargs):
+        return HttpResponse('Welcome, friend.')
 
 
 def show_template_tag(request):
