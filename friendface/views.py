@@ -240,12 +240,18 @@ class FacebookAppAuthMixin(object):
             set_mobile(request)
 
         self.request = request
+        facebook_user = self.request.facebook.user
+        facebook_scraper = request.META.get('HTTP_USER_AGENT',
+                                            '').startswith(FACEBOOK_USER_AGENT)
+        user_for_this_app = (
+            facebook_user and
+            facebook_user.application == self.request.facebook.application
+        )
 
         # If it's the scraper then don't require it to authorize, just
         # continue on and let it see the page (and read the sharing message)
-        if request.META.get('HTTP_USER_AGENT',
-                            '').startswith(FACEBOOK_USER_AGENT) or \
-                self.request.user.is_authenticated():
+        if(facebook_scraper or
+           (self.request.user.is_authenticated() and user_for_this_app)):
             return super(FacebookAppAuthMixin, self).dispatch(
                 request, *args, **kwargs
             )

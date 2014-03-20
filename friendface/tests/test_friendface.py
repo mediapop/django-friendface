@@ -146,7 +146,7 @@ class FacebookAuthorizationTestCase(TestCase):
                                 urllib.urlencode(params))
         self.assertRedirects(response, target_url)
 
-    @patch.object(FacebookContext, 'request', lambda _: {'truthy': 'value'})
+    # @patch.object(FacebookContext, 'request', lambda _: {'truthy': 'value'})
     def test_auth_on_facebook_but_mobile_return_to_bare_url(self):
         self.client.get(reverse('mobile_view'))
         self.assertTrue(self.client.session['is_facebook_mobile'])

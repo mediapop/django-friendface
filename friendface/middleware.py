@@ -37,6 +37,10 @@ class FacebookContext(object):
                     login(self.django_request, authenticated_user)
 
                 return user
+
+        if not self.django_request.user.is_authenticated():
+            return None
+
         try:
             return self.application.facebookuser_set.get(
                 user=self.django_request.user
