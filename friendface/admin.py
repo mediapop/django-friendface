@@ -48,7 +48,6 @@ class FacebookApplicationAdmin(admin.ModelAdmin):
                        'canvas_fluid_width',
                        'canvas_url',
                        'contact_email',
-                       'created_time',
                        'deauth_callback_url',
                        'iphone_app_store_id',
                        'hosting_url',
