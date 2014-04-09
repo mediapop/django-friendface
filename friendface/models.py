@@ -234,7 +234,6 @@ class FacebookApplication(AccessTokenMixin, models.Model,
     canvas_fluid_width = models.NullBooleanField(blank=True, null=True)
     canvas_url = models.URLField(blank=True, null=True)
     contact_email = models.EmailField(blank=True, null=True)
-    created_time = models.BigIntegerField(blank=True, null=True)
     deauth_callback_url = models.URLField(blank=True, null=True)
     iphone_app_store_id = models.IntegerField(blank=True, null=True)
     hosting_url = models.URLField(blank=True, null=True)
